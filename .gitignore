@@ -6,3 +6,5 @@ target
 .moonagent/
 .repos/
 .tmp/
+/input.pdf
+tests/cram/*.md.new
