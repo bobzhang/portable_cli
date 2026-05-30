@@ -6,11 +6,18 @@ struct PdfObjectHit {
 }
 
 ///|
+struct PdfInput {
+  path : String
+  data : Bytes
+}
+
+///|
 struct PdfScan {
   path : String
   input_bytes : Int
   version : String
   startxref : Int
+  object_hits : Array[PdfObjectHit]
   eof_markers : Int
   object_candidates : Int
   page_candidates : Int
@@ -182,6 +189,11 @@ fn read_pdf_bytes(path : String) -> Bytes {
 }
 
 ///|
+fn read_pdf_input(path : String) -> PdfInput {
+  { path, data: read_pdf_bytes(path) }
+}
+
+///|
 fn match_at(data : BytesView, offset : Int, needle : BytesView) -> Bool {
   if offset < 0 || offset + needle.length() > data.length() {
     return false
@@ -306,39 +318,67 @@ fn scan_objects(data : BytesView, limit : Int) -> Array[PdfObjectHit] {
 }
 
 ///|
-fn scan_pdf(path : String, data : Bytes) -> PdfScan {
-  let version = @reader.pdf_read_header_from_bytes(data) catch {
+fn object_scan_limit() -> Int {
+  1000000
+}
+
+///|
+fn limit_object_hits(
+  hits : Array[PdfObjectHit],
+  limit : Int,
+) -> Array[PdfObjectHit] {
+  let cap = if limit < 0 {
+    0
+  } else if limit < hits.length() {
+    limit
+  } else {
+    hits.length()
+  }
+  let out : Array[PdfObjectHit] = []
+  for i in 0..<cap {
+    out.push(hits[i])
+  }
+  out
+}
+
+///|
+fn scan_pdf(input : PdfInput) -> PdfScan {
+  let version = @reader.pdf_read_header_from_bytes(input.data) catch {
     err =>
       die(
-        "pdfskill: failed to read PDF header for \{path}: " +
+        "pdfskill: failed to read PDF header for \{input.path}: " +
         @core.pdf_error_summary(err),
         1,
       )
   }
-  let startxref = @reader.pdf_read_startxref_position(data) catch { _ => -1 }
+  let startxref = @reader.pdf_read_startxref_position(input.data) catch {
+    _ => -1
+  }
+  let object_hits = scan_objects(input.data, object_scan_limit())
   {
-    path,
-    input_bytes: data.length(),
+    path: input.path,
+    input_bytes: input.data.length(),
     version: version.major.to_string() + "." + version.minor.to_string(),
     startxref,
-    eof_markers: count_occurrences(data, "%%EOF"),
-    object_candidates: scan_objects(data, 1000000).length(),
-    page_candidates: count_pdf_name(data, "/Page"),
-    stream_candidates: count_occurrences(data, "stream"),
-    xref_tokens: count_occurrences(data, "xref"),
-    encrypted: count_pdf_name(data, "/Encrypt") > 0,
-    javascript: count_pdf_name(data, "/JavaScript") +
-    count_pdf_name(data, "/JS"),
-    active_actions: count_pdf_name(data, "/OpenAction") +
-    count_pdf_name(data, "/AA") +
-    count_pdf_name(data, "/Launch"),
-    embedded_files: count_pdf_name(data, "/EmbeddedFile") +
-    count_pdf_name(data, "/Filespec"),
-    acroform: count_pdf_name(data, "/AcroForm") > 0,
-    xfa: count_pdf_name(data, "/XFA") > 0,
-    images: count_pdf_name(data, "/Image"),
-    object_streams: count_pdf_name(data, "/ObjStm"),
-    linearized: count_pdf_name(data, "/Linearized") > 0,
+    object_hits,
+    eof_markers: count_occurrences(input.data, "%%EOF"),
+    object_candidates: object_hits.length(),
+    page_candidates: count_pdf_name(input.data, "/Page"),
+    stream_candidates: count_occurrences(input.data, "stream"),
+    xref_tokens: count_occurrences(input.data, "xref"),
+    encrypted: count_pdf_name(input.data, "/Encrypt") > 0,
+    javascript: count_pdf_name(input.data, "/JavaScript") +
+    count_pdf_name(input.data, "/JS"),
+    active_actions: count_pdf_name(input.data, "/OpenAction") +
+    count_pdf_name(input.data, "/AA") +
+    count_pdf_name(input.data, "/Launch"),
+    embedded_files: count_pdf_name(input.data, "/EmbeddedFile") +
+    count_pdf_name(input.data, "/Filespec"),
+    acroform: count_pdf_name(input.data, "/AcroForm") > 0,
+    xfa: count_pdf_name(input.data, "/XFA") > 0,
+    images: count_pdf_name(input.data, "/Image"),
+    object_streams: count_pdf_name(input.data, "/ObjStm"),
+    linearized: count_pdf_name(input.data, "/Linearized") > 0,
   }
 }
 
@@ -455,8 +495,7 @@ fn write_text_output(path : String?, text : String) -> Unit {
 
 ///|
 fn run_brief(input : String, as_json : Bool, output : String?) -> Unit {
-  let data = read_pdf_bytes(input)
-  let scan = scan_pdf(input, data)
+  let scan = scan_pdf(read_pdf_input(input))
   write_text_output(
     output,
     if as_json {
@@ -474,8 +513,7 @@ fn doctor_line(kind : String, label : String, value : String) -> String {
 
 ///|
 fn run_doctor(input : String) -> Unit {
-  let data = read_pdf_bytes(input)
-  let scan = scan_pdf(input, data)
+  let scan = scan_pdf(read_pdf_input(input))
   let startxref_line = if scan.startxref >= 0 {
     doctor_line("ok", "startxref", scan.startxref.to_string())
   } else {
@@ -506,8 +544,9 @@ fn run_doctor(input : String) -> Unit {
 
 ///|
 fn run_map(input : String, limit : Int) -> Unit {
-  let data = read_pdf_bytes(input)
-  let hits = scan_objects(data, limit)
+  let pdf = read_pdf_input(input)
+  let scan = scan_pdf(pdf)
+  let hits = limit_object_hits(scan.object_hits, limit)
   let mut out =
     $|# PDF Object Map
     $|
