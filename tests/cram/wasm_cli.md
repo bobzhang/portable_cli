@@ -11,7 +11,7 @@ Moon's runner may consume flags such as `--help`.
 
 ```mooncram
 $ moon -C "$TESTDIR/../.." run --target wasm cmd/main
-portable_cli commands: cmd/cow, cmd/htmlfmt, cmd/jqlet, cmd/tree, cmd/pulse
+portable_cli commands: cmd/cow, cmd/htmlfmt, cmd/jqlet, cmd/repopack, cmd/tree, cmd/pulse
 ```
 
 ## Cow Help
@@ -116,6 +116,38 @@ $ printf '{"items":[{"name":"moon","score":2}],"ok":true}\n' | moon -C "$TESTDIR
 ```mooncram
 $ root="$TESTDIR/../.."; out=".tmp/moon-cram-jqlet.json"; rm -f "$root/$out"; printf '{"ok":true}\n' | moon -C "$root" run --target wasm cmd/jqlet -- --get ok --compact --output "$out"; cat "$root/$out"; rm -f "$root/$out"
 true
+```
+
+## Repopack Markdown Bundle
+
+```mooncram
+$ root="$TESTDIR/../.."; tmp=".tmp/moon-cram-repopack"; rm -rf "$root/$tmp"; mkdir -p "$root/$tmp/src" "$root/$tmp/node_modules/pkg" "$root/$tmp/.git"; printf '# Demo\n\nHello MoonBit.\n' > "$root/$tmp/README.md"; printf 'fn main { println("hi") }\n' > "$root/$tmp/src/main.mbt"; printf '{"ignored":true}\n' > "$root/$tmp/node_modules/pkg/package.json"; printf 'hidden\n' > "$root/$tmp/.hidden.txt"; moon -C "$root" run --target wasm cmd/repopack -- --max-chars 40 "$tmp"; rm -rf "$root/$tmp"
+# Repo Pack
+
+- root: `.tmp/moon-cram-repopack`
+- files: 2
+- max chars per file: 40
+
+## Included Files
+
+- `.tmp/moon-cram-repopack/README.md` - 23 chars
+- `.tmp/moon-cram-repopack/src/main.mbt` - 26 chars
+
+## File Contents
+
+### `.tmp/moon-cram-repopack/README.md`
+
+~~~~markdown
+# Demo
+
+Hello MoonBit.
+~~~~
+
+### `.tmp/moon-cram-repopack/src/main.mbt`
+
+~~~~moonbit
+fn main { println("hi") }
+~~~~
 ```
 
 ## Tree Default Filtering
