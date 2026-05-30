@@ -32,8 +32,15 @@ moon build --target wasm cmd/cow cmd/tree cmd/pulse
 Then run a built module with explicit preopened paths:
 
 ```sh
-wasmtime run --dir .::. _build/wasm/debug/build/cmd/tree/tree.wasm --depth 2 .
+wasmtime run \
+  --dir .::. \
+  --preload __moonbit_sys_unstable=wasm/moonbit-sys-unstable.wat \
+  _build/wasm/debug/build/cmd/tree/tree.wasm \
+  --depth 2 .
 ```
+
+The preload module forwards the current MoonBit `@argparse` wasm exit shim to
+WASI `proc_exit`, which lets help/version handling run under plain Wasmtime.
 
 Use `scripts/smoke.sh` to exercise all commands through `moon run --target wasm`
 and direct `wasmtime` when `wasmtime` is installed.
