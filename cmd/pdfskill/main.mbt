@@ -106,7 +106,7 @@ fn[T] die(message : String, code : Int) -> T {
 fn command() -> @argparse.Command {
   @argparse.Command(
     "pdfskill",
-    about="Portable PDF triage for agent skills, powered by pdflite/reader and miniio.",
+    about="Portable PDF inspection, extraction, and creation for agent skills.",
     version="0.1.0",
     subcommand_required=true,
     disable_help_subcommand=true,
