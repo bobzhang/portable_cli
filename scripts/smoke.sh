@@ -3,6 +3,7 @@ set -eu
 
 moon check --target wasm
 moon test --target wasm
+moon cram test tests/cram
 
 tmp=".tmp/portable-cli-smoke"
 rm -rf "$tmp"
@@ -12,18 +13,18 @@ printf 'beta\n' > "$tmp/src/nested/b.txt"
 printf 'MoonBit wasm wasm portable CLI\nMoonBit CLI\n' > "$tmp/input.txt"
 printf '{"items":[{"name":"moon"},{"name":"wasm"}],"ok":true}\n' > "$tmp/data.json"
 
-moon run --target wasm cmd/cow --width 24 portable wasm cli >/tmp/portable-cli-cow.out
+moon run --target wasm cmd/cow -- --width 24 portable wasm cli >/tmp/portable-cli-cow.out
 grep 'portable wasm cli' /tmp/portable-cli-cow.out >/dev/null
 
-moon run --target wasm cmd/jqlet --file "$tmp/data.json" --get 'items[1].name' --raw >/tmp/portable-cli-jqlet.out
+moon run --target wasm cmd/jqlet -- --file "$tmp/data.json" --get 'items[1].name' --raw >/tmp/portable-cli-jqlet.out
 grep 'wasm' /tmp/portable-cli-jqlet.out >/dev/null
-moon run --target wasm cmd/jqlet --file "$tmp/data.json" --get ok --compact --output "$tmp/ok.json"
+moon run --target wasm cmd/jqlet -- --file "$tmp/data.json" --get ok --compact --output "$tmp/ok.json"
 grep 'true' "$tmp/ok.json" >/dev/null
 
-moon run --target wasm cmd/tree --depth 2 "$tmp/src" >/tmp/portable-cli-tree.out
+moon run --target wasm cmd/tree -- --depth 2 "$tmp/src" >/tmp/portable-cli-tree.out
 grep 'nested/' /tmp/portable-cli-tree.out >/dev/null
 
-moon run --target wasm cmd/pulse --file "$tmp/input.txt" --top 3 --width 12 >/tmp/portable-cli-pulse.out
+moon run --target wasm cmd/pulse -- --file "$tmp/input.txt" --top 3 --width 12 >/tmp/portable-cli-pulse.out
 grep 'wasm' /tmp/portable-cli-pulse.out >/dev/null
 
 moon build --target wasm cmd/cow cmd/jqlet cmd/tree cmd/pulse

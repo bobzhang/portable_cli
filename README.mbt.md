@@ -18,10 +18,10 @@ declarative CLI parsing.
 ## Run With Moon
 
 ```sh
-moon run --target wasm cmd/cow portable wasm cli
-printf '{"items":[{"name":"moon"}]}\n' | moon run --target wasm cmd/jqlet --get 'items[0].name' --raw
-moon run --target wasm cmd/tree --depth 2 .
-printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse --top 3
+moon run --target wasm cmd/cow -- portable wasm cli
+printf '{"items":[{"name":"moon"}]}\n' | moon run --target wasm cmd/jqlet -- --get 'items[0].name' --raw
+moon run --target wasm cmd/tree -- --depth 2 .
+printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
 ```
 
 ## Run With Wasmtime
@@ -47,3 +47,18 @@ WASI `proc_exit`, which lets help/version handling run under plain Wasmtime.
 
 Use `scripts/smoke.sh` to exercise all commands through `moon run --target wasm`
 and direct `wasmtime` when `wasmtime` is installed.
+
+## Cram Tests
+
+The Cram suite records shell-visible CLI behavior for the WASM target and
+doubles as runnable command documentation:
+
+```sh
+moon cram test tests/cram
+```
+
+See `tests/cram/wasm_cli.md` for the checked examples.
+
+The tests intentionally invoke packages with `moon run --target wasm` instead
+of native `.exe` binaries because the examples are portable `miniio` WASIp1
+programs.
