@@ -1,0 +1,13 @@
+import {
+  "bobzhang/html_parser",
+  "moonbit-community/miniio",
+  "moonbit-community/miniio/io",
+  "moonbitlang/core/argparse",
+  "moonbitlang/core/string",
+}
+
+supported_targets = "wasm"
+
+options(
+  is_main: true,
+)

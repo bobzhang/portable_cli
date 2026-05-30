@@ -11,7 +11,7 @@ Moon's runner may consume flags such as `--help`.
 
 ```mooncram
 $ moon -C "$TESTDIR/../.." run --target wasm cmd/main
-portable_cli commands: cmd/cow, cmd/jqlet, cmd/tree, cmd/pulse
+portable_cli commands: cmd/cow, cmd/htmlfmt, cmd/jqlet, cmd/tree, cmd/pulse
 ```
 
 ## Cow Help
@@ -62,6 +62,31 @@ $ printf 'moonbit cram docs\n' | COW_WIDTH=12 moon -C "$TESTDIR/../.." run --tar
             (__)\       )\/\
              U  ||----w |
                 ||     ||
+```
+
+## Htmlfmt Fragment
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- '<article><p>Hello <b>MoonBit</b></p></article>'
+<article>
+  <p>Hello <b>MoonBit</b></p>
+</article>
+```
+
+## Htmlfmt Compact Stdin
+
+```mooncram
+$ printf '<p class=demo>Hello <b>MoonBit</b></p>\n' | moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --compact
+<p class="demo">Hello <b>MoonBit</b></p>
+```
+
+## Htmlfmt Output File
+
+```mooncram
+$ root="$TESTDIR/../.."; in=".tmp/moon-cram-htmlfmt.html"; out=".tmp/moon-cram-htmlfmt-out.html"; printf '<section><p>File <em>input</em></p></section>\n' > "$root/$in"; moon -C "$root" run --target wasm cmd/htmlfmt -- --file "$in" --output "$out"; cat "$root/$out"; rm -f "$root/$in" "$root/$out"
+<section>
+  <p>File <em>input</em></p>
+</section>
 ```
 
 ## Jqlet Path Extraction

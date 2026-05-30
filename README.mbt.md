@@ -8,6 +8,9 @@ declarative CLI parsing.
 
 - `cmd/cow`: a cowsay-style filter. It accepts words as arguments or reads
   stdin, supports `--width`, `--eyes`, `--tongue`, and `--think`.
+- `cmd/htmlfmt`: HTML formatter backed by `bobzhang/html_parser`. It reads
+  stdin, inline HTML, or `--file`, supports fragment/document parsing,
+  `--compact`, `--indent`, `--sanitize`, `--strict`, and `--output`.
 - `cmd/jqlet`: JSON formatter and simple path extractor. It reads stdin or
   `--file`, supports `--get`, `--raw`, `--compact`, `--indent`, and `--output`.
 - `cmd/tree`: deterministic directory tree rendering over guest-visible WASI
@@ -19,6 +22,7 @@ declarative CLI parsing.
 
 ```sh
 moon run --target wasm cmd/cow -- portable wasm cli
+moon run --target wasm cmd/htmlfmt -- '<article><p>Hello <b>MoonBit</b></p></article>'
 printf '{"items":[{"name":"moon"}]}\n' | moon run --target wasm cmd/jqlet -- --get 'items[0].name' --raw
 moon run --target wasm cmd/tree -- --depth 2 .
 printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
@@ -29,7 +33,7 @@ printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
 Build the WASIp1 modules:
 
 ```sh
-moon build --target wasm cmd/cow cmd/jqlet cmd/tree cmd/pulse
+moon build --target wasm cmd/cow cmd/htmlfmt cmd/jqlet cmd/tree cmd/pulse
 ```
 
 Then run a built module with explicit preopened paths:
