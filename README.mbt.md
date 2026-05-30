@@ -67,18 +67,16 @@ moon cram test tests/cram
 
 See `tests/cram/wasm_cli.md` for the checked examples.
 
-The tests intentionally invoke packages with `moon run --target wasm` instead
-of native `.exe` binaries because the examples are portable `miniio` WASIp1
-programs.
+The command tests invoke packages with `moon run --target wasm` instead of
+native `.exe` binaries, and the skill test invokes its bundled `.wasm` with
+`moonrun`.
 
 ## Codex Skill
 
 This repo also includes a prototype Codex skill at
-`skills/portable-repopack`. It builds release WASM with Moon and runs the
-artifact through `moonrun`, so the agent does not need runtime-specific flags:
+`skills/portable-repopack`. It bundles a release WASM artifact and runs it
+through `moonrun`, so the agent does not need a MoonBit build step:
 
 ```sh
-skills/portable-repopack/scripts/repopack-moonrun.sh \
-  --workdir . \
-  -- --max-files 80 --max-chars 8000 .
+moonrun skills/portable-repopack/assets/repopack.wasm --max-files 80 --max-chars 8000 .
 ```
