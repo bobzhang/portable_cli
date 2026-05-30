@@ -25,6 +25,7 @@ Top-level:
 - `brief`: write an agent-readable Markdown or JSON triage report.
 - `doctor`: run quick structural checks and print pass/warn lines.
 - `map`: list indirect object candidates with byte offsets.
+- `objects`: parse and summarize indirect objects, dictionaries, and streams.
 - `-h, --help`, `-V, --version`: standard generated `@argparse` help/version flags.
 
 `brief`:
@@ -41,6 +42,13 @@ Top-level:
 
 - `input`: input PDF path.
 - `--limit <limit>`: maximum object candidates to print. Default: `40`.
+
+`objects`:
+
+- `input`: input PDF path.
+- `--json`: write compact JSON instead of Markdown.
+- `--limit <limit>`: maximum matching objects to print. Default: `40`.
+- `--contains <text>`: only include objects whose raw bytes or summary contain this text.
 
 ## Pandoc-Generated PDF
 
@@ -136,6 +144,69 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/active-action.pdf"; moon -
 | 1 | 0 | 9 |
 | 2 | 0 | 76 |
 | 3 | 0 | 133 |
+```
+
+## Object Inspector
+
+`objects` parses indirect object bodies and reports the object kind, dictionary
+`/Type`, `/Subtype`, stream filter, and declared stream length when those fields
+are available. It remains bounded by `--limit`, so it is safe to use as a first
+look at unfamiliar PDFs.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/active-action.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- objects --limit 5 "$fixture"
+# PDF Objects
+
+- path: `tests/cram/fixtures/active-action.pdf`
+- listed: 3
+- limit: 5
+
+| object | generation | offset | kind | type | subtype | stream | length | filters | note |
+|---:|---:|---:|---|---|---|---|---:|---|---|
+| 1 | 0 | 9 | dict | /Catalog | - | false | - | - | - |
+| 2 | 0 | 76 | dict | /Pages | - | false | - | - | - |
+| 3 | 0 | 133 | dict | /Page | - | false | - | - | - |
+```
+
+The Pandoc fixture starts with compressed streams. `objects` can identify the
+stream shape and filter without decoding stream bytes.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/pandoc-report.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- objects --limit 3 "$fixture"
+# PDF Objects
+
+- path: `tests/cram/fixtures/pandoc-report.pdf`
+- listed: 3
+- limit: 3
+
+| object | generation | offset | kind | type | subtype | stream | length | filters | note |
+|---:|---:|---:|---|---|---|---|---:|---|---|
+| 14 | 0 | 15 | stream | - | - | true | 973 | /FlateDecode | - |
+| 30 | 0 | 1057 | stream | - | - | true | 314 | /FlateDecode | - |
+| 31 | 0 | 1440 | stream | - | - | true | 341 | /FlateDecode | - |
+```
+
+Use `--contains` to find likely object classes by raw token or parsed summary.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/active-action.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- objects --limit 4 --contains /Page "$fixture"
+# PDF Objects
+
+- path: `tests/cram/fixtures/active-action.pdf`
+- listed: 3
+- limit: 4
+- contains: `/Page`
+
+| object | generation | offset | kind | type | subtype | stream | length | filters | note |
+|---:|---:|---:|---|---|---|---|---:|---|---|
+| 1 | 0 | 9 | dict | /Catalog | - | false | - | - | - |
+| 2 | 0 | 76 | dict | /Pages | - | false | - | - | - |
+| 3 | 0 | 133 | dict | /Page | - | false | - | - | - |
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/active-action.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- objects --json --limit 2 "$fixture"
+{"contains":null,"limit":2,"listed":2,"objects":[{"filters":"-","generation":0,"kind":"dict","length":"-","note":"-","object":1,"offset":9,"stream":false,"subtype":"-","type":"/Catalog"},{"filters":"-","generation":0,"kind":"dict","length":"-","note":"-","object":2,"offset":76,"stream":false,"subtype":"-","type":"/Pages"}],"path":"tests/cram/fixtures/active-action.pdf"}
 ```
 
 ## Bundled Skill Artifact

@@ -35,10 +35,23 @@ struct PdfScan {
 }
 
 ///|
+struct PdfObjectSummary {
+  hit : PdfObjectHit
+  kind : String
+  type_name : String
+  subtype_name : String
+  has_stream : Bool
+  length : String
+  filters : String
+  note : String
+}
+
+///|
 enum PdfSkillCommand {
   Brief(String, Bool, String?)
   Doctor(String)
   Map(String, Int)
+  Objects(String, Int, String?, Bool)
 }
 
 ///|
@@ -115,6 +128,37 @@ fn command() -> @argparse.Command {
           ),
         ],
       ),
+      @argparse.Command(
+        "objects",
+        about="Parse and summarize indirect objects, dictionaries, and streams.",
+        flags=[
+          @argparse.FlagArg(
+            "json",
+            long="json",
+            about="write compact JSON instead of Markdown",
+          ),
+        ],
+        options=[
+          @argparse.OptionArg(
+            "limit",
+            long="limit",
+            about="maximum matching objects to print",
+            default_values=["40"],
+          ),
+          @argparse.OptionArg(
+            "contains",
+            long="contains",
+            about="only include objects whose raw bytes or summary contain this text",
+          ),
+        ],
+        positionals=[
+          @argparse.PositionArg(
+            "input",
+            about="input PDF path",
+            num_args=@argparse.ValueRange::single(),
+          ),
+        ],
+      ),
     ],
   )
 }
@@ -138,6 +182,13 @@ fn parse() -> PdfSkillCommand {
     Some(("doctor", sub)) => Doctor(required_value(sub, "input"))
     Some(("map", sub)) =>
       Map(required_value(sub, "input"), int_value(sub, "limit", 40))
+    Some(("objects", sub)) =>
+      Objects(
+        required_value(sub, "input"),
+        int_value(sub, "limit", 40),
+        option(sub, "contains"),
+        flag(sub, "json"),
+      )
     Some((name, _)) => die("pdfskill: unexpected subcommand: \{name}", 2)
     None => die("pdfskill: missing subcommand", 2)
   }
@@ -383,6 +434,276 @@ fn scan_pdf(input : PdfInput) -> PdfScan {
 }
 
 ///|
+fn find_occurrence_from(data : BytesView, start : Int, pattern : String) -> Int {
+  let needle = @utf8.encode(pattern)
+  let mut index = if start < 0 { 0 } else { start }
+  while index + needle.length() <= data.length() {
+    if match_at(data, index, needle) {
+      return index
+    }
+    index += 1
+  }
+  -1
+}
+
+///|
+fn pdf_name(text : String) -> @core.PdfName {
+  @core.pdf_name_of_bytes(@utf8.encode(text))
+}
+
+///|
+fn pdf_name_text(name : @core.PdfName) -> String {
+  @utf8.decode_lossy(name.bytes())
+}
+
+///|
+fn object_end_offset(data : BytesView, hit : PdfObjectHit) -> Int {
+  let endobj = find_occurrence_from(data, hit.offset, "endobj")
+  if endobj < 0 {
+    -1
+  } else {
+    endobj + 6
+  }
+}
+
+///|
+fn object_view(input : PdfInput, hit : PdfObjectHit) -> BytesView? {
+  let end = object_end_offset(input.data, hit)
+  if end < 0 || end <= hit.offset {
+    return None
+  }
+  let cursor = @core.byte_cursor_of_bytes(input.data)
+  Some(cursor.view_at(hit.offset, end - hit.offset) catch { _ => return None })
+}
+
+///|
+fn object_kind(object : @syntax.PdfObject) -> String {
+  match object {
+    PdfNull => "null"
+    PdfBoolean(_) => "bool"
+    PdfInteger(_) => "int"
+    PdfReal(_) => "real"
+    PdfString(_) => "string"
+    PdfNameObject(_) => "name"
+    PdfArray(_) => "array"
+    PdfDictionary(_) => "dict"
+    PdfStreamObject(_) => "stream"
+    PdfIndirect(_) => "ref"
+  }
+}
+
+///|
+fn object_dictionary(object : @syntax.PdfObject) -> @syntax.PdfObject? {
+  match object {
+    PdfDictionary(_) => Some(object)
+    PdfStreamObject(stream) => Some(stream.dictionary)
+    _ => None
+  }
+}
+
+///|
+fn object_name_text(object : @syntax.PdfObject) -> String? {
+  match object {
+    PdfNameObject(name) => Some(pdf_name_text(name))
+    _ => None
+  }
+}
+
+///|
+fn object_int_text(object : @syntax.PdfObject) -> String? {
+  match object {
+    PdfInteger(value) => Some(value.to_string())
+    PdfIndirect(number) => Some("ref:\{number}")
+    _ => None
+  }
+}
+
+///|
+fn lookup_object(dict : @syntax.PdfObject, key : String) -> @syntax.PdfObject? {
+  dict.lookup_immediate(pdf_name(key))
+}
+
+///|
+fn lookup_name_text(dict : @syntax.PdfObject, key : String) -> String {
+  match lookup_object(dict, key) {
+    Some(value) =>
+      match object_name_text(value) {
+        Some(name) => name
+        None => "-"
+      }
+    None => "-"
+  }
+}
+
+///|
+fn lookup_length_text(dict : @syntax.PdfObject) -> String {
+  match lookup_object(dict, "/Length") {
+    Some(value) =>
+      match object_int_text(value) {
+        Some(text) => text
+        None => "-"
+      }
+    None => "-"
+  }
+}
+
+///|
+fn join_strings(items : Array[String], separator : String) -> String {
+  if items.length() == 0 {
+    return "-"
+  }
+  let mut out = items[0]
+  for i in 1..<items.length() {
+    out += separator + items[i]
+  }
+  out
+}
+
+///|
+fn append_filter_names(
+  object : @syntax.PdfObject,
+  output : Array[String],
+) -> Unit {
+  match object {
+    PdfNameObject(name) => output.push(pdf_name_text(name))
+    PdfArray(items) =>
+      for item in items {
+        append_filter_names(item, output)
+      }
+    _ => ()
+  }
+}
+
+///|
+fn lookup_filters_text(dict : @syntax.PdfObject) -> String {
+  let filters : Array[String] = []
+  match lookup_object(dict, "/Filter") {
+    Some(value) => append_filter_names(value, filters)
+    None => ()
+  }
+  join_strings(filters, ",")
+}
+
+///|
+fn object_summary_from_parsed(
+  hit : PdfObjectHit,
+  object : @syntax.PdfObject,
+  raw_has_stream : Bool,
+) -> PdfObjectSummary {
+  let dict = object_dictionary(object)
+  let type_name = match dict {
+    Some(value) => lookup_name_text(value, "/Type")
+    None => "-"
+  }
+  let subtype_name = match dict {
+    Some(value) => lookup_name_text(value, "/Subtype")
+    None => "-"
+  }
+  let length = match dict {
+    Some(value) => lookup_length_text(value)
+    None => "-"
+  }
+  let filters = match dict {
+    Some(value) => lookup_filters_text(value)
+    None => "-"
+  }
+  {
+    hit,
+    kind: if raw_has_stream {
+      "stream"
+    } else {
+      object_kind(object)
+    },
+    type_name,
+    subtype_name,
+    has_stream: raw_has_stream || object is PdfStreamObject(_),
+    length,
+    filters,
+    note: "-",
+  }
+}
+
+///|
+fn object_summary_error(hit : PdfObjectHit, note : String) -> PdfObjectSummary {
+  {
+    hit,
+    kind: "parse-error",
+    type_name: "-",
+    subtype_name: "-",
+    has_stream: false,
+    length: "-",
+    filters: "-",
+    note,
+  }
+}
+
+///|
+fn inspect_object(input : PdfInput, hit : PdfObjectHit) -> PdfObjectSummary {
+  match object_view(input, hit) {
+    Some(view) => {
+      let parsed = @syntax.pdf_parse_indirect_object_from_view(view) catch {
+        err =>
+          return object_summary_error(
+            hit,
+            "parse: " + @core.pdf_error_summary(err),
+          )
+      }
+      object_summary_from_parsed(
+        hit,
+        parsed.object,
+        find_occurrence_from(view, 0, "stream") >= 0,
+      )
+    }
+    None => object_summary_error(hit, "missing endobj")
+  }
+}
+
+///|
+fn summary_contains(
+  summary : PdfObjectSummary,
+  view : BytesView?,
+  text : String,
+) -> Bool {
+  if text == "" {
+    return true
+  }
+  if summary.kind.contains(text) ||
+    summary.type_name.contains(text) ||
+    summary.subtype_name.contains(text) ||
+    summary.filters.contains(text) ||
+    summary.note.contains(text) {
+    return true
+  }
+  match view {
+    Some(bytes) => count_occurrences(bytes, text) > 0
+    None => false
+  }
+}
+
+///|
+fn object_summaries(
+  input : PdfInput,
+  limit : Int,
+  contains : String?,
+) -> Array[PdfObjectSummary] {
+  let cap = if limit < 0 { 0 } else { limit }
+  let scan = scan_pdf(input)
+  let out : Array[PdfObjectSummary] = []
+  let needle = contains.unwrap_or("")
+  for hit in scan.object_hits {
+    if out.length() >= cap {
+      break
+    }
+    let view = object_view(input, hit)
+    let summary = inspect_object(input, hit)
+    if summary_contains(summary, view, needle) {
+      out.push(summary)
+    }
+  }
+  out
+}
+
+///|
 fn risk_label(scan : PdfScan) -> String {
   if scan.encrypted {
     "encrypted"
@@ -568,10 +889,112 @@ fn run_map(input : String, limit : Int) -> Unit {
 }
 
 ///|
+fn object_summary_json(summary : PdfObjectSummary) -> Json {
+  Json::object({
+    "filters": Json::string(summary.filters),
+    "generation": int_json(summary.hit.generation),
+    "kind": Json::string(summary.kind),
+    "length": Json::string(summary.length),
+    "note": Json::string(summary.note),
+    "object": int_json(summary.hit.number),
+    "offset": int_json(summary.hit.offset),
+    "stream": Json::boolean(summary.has_stream),
+    "subtype": Json::string(summary.subtype_name),
+    "type": Json::string(summary.type_name),
+  })
+}
+
+///|
+fn contains_json(contains : String?) -> Json {
+  match contains {
+    Some(value) => Json::string(value)
+    None => Json::null()
+  }
+}
+
+///|
+fn object_summaries_json(
+  input : String,
+  limit : Int,
+  contains : String?,
+  summaries : Array[PdfObjectSummary],
+) -> String {
+  Json::object({
+    "contains": contains_json(contains),
+    "limit": int_json(limit),
+    "listed": int_json(summaries.length()),
+    "objects": Json::array(
+      [
+        for summary in summaries => object_summary_json(summary)
+      ],
+    ),
+    "path": Json::string(input),
+  }).stringify() +
+  "\n"
+}
+
+///|
+fn object_summaries_markdown(
+  input : String,
+  limit : Int,
+  contains : String?,
+  summaries : Array[PdfObjectSummary],
+) -> String {
+  let mut out =
+    $|# PDF Objects
+    $|
+    $|- path: `\{input}`
+    $|- listed: \{summaries.length()}
+    $|- limit: \{limit}
+    $|
+  match contains {
+    Some(value) =>
+      out += (
+        $|- contains: `\{value}`
+        $|
+      )
+    None => ()
+  }
+  out += (
+    $|
+    $|| object | generation | offset | kind | type | subtype | stream | length | filters | note |
+    $||---:|---:|---:|---|---|---|---|---:|---|---|
+    $|
+  )
+  for summary in summaries {
+    out += (
+      $|| \{summary.hit.number} | \{summary.hit.generation} | \{summary.hit.offset} | \{summary.kind} | \{summary.type_name} | \{summary.subtype_name} | \{bool_text(summary.has_stream)} | \{summary.length} | \{summary.filters} | \{summary.note} |
+      $|
+    )
+  }
+  out
+}
+
+///|
+fn run_objects(
+  input : String,
+  limit : Int,
+  contains : String?,
+  as_json : Bool,
+) -> Unit {
+  let summaries = object_summaries(read_pdf_input(input), limit, contains)
+  let out = if as_json {
+    object_summaries_json(input, limit, contains, summaries)
+  } else {
+    object_summaries_markdown(input, limit, contains, summaries)
+  }
+  @miniio.stdout.write_text(out) catch {
+    err => die("pdfskill: failed to write stdout: \{err}", 1)
+  }
+}
+
+///|
 fn main {
   match parse() {
     Brief(input, as_json, output) => run_brief(input, as_json, output)
     Doctor(input) => run_doctor(input)
     Map(input, limit) => run_map(input, limit)
+    Objects(input, limit, contains, as_json) =>
+      run_objects(input, limit, contains, as_json)
   }
 }
