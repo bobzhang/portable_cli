@@ -15,13 +15,13 @@ version = "0.1.0"
 
 readme = "README.mbt.md"
 
-repository = ""
+repository = "https://github.com/bobzhang/portable_cli"
 
 license = "Apache-2.0"
 
-keywords = [ ]
+keywords = [ "cli", "wasm", "wasi", "portable", "miniio" ]
 
-description = ""
+description = "Portable MoonBit CLI examples that compile to WASIp1 and run across WASM runtimes."
 
 import {
   "moonbit-community/miniio@0.2.0",
