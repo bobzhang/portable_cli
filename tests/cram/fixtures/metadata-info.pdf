@@ -1,0 +1,30 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /Metadata 5 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 144] /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 46 >>
+stream
+BT /F1 12 Tf 72 72 Td (Metadata fixture) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Metadata /Subtype /XML /Length 135 >>
+stream
+<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF><rdf:Description><dc:title>Portable PDF</dc:title></rdf:Description></rdf:RDF></x:xmpmeta>
+endstream
+endobj
+6 0 obj
+<< /Title (Portable PDF Fixture) /Author (MoonBit Agent) /Creator (pdfskill cram) /Producer (portable_cli) /CreationDate (D:20260530000000Z) >>
+endobj
+trailer
+<< /Root 1 0 R /Info 6 0 R /Size 7 >>
+startxref
+0
+%%EOF

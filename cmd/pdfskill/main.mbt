@@ -57,12 +57,29 @@ struct PdfStreamSummary {
 }
 
 ///|
+struct PdfMetadataSummary {
+  path : String
+  info_objects : Int
+  title : String
+  author : String
+  subject : String
+  keywords : String
+  creator : String
+  producer : String
+  creation_date : String
+  mod_date : String
+  xmp_objects : Int
+  xmp_preview : String
+}
+
+///|
 enum PdfSkillCommand {
   Brief(String, Bool, String?)
   Doctor(String)
   Map(String, Int)
   Objects(String, Int, String?, Bool)
   Streams(String, Int, Bool, Int, Bool)
+  Metadata(String, Int, Bool)
 }
 
 ///|
@@ -207,6 +224,32 @@ fn command() -> @argparse.Command {
           ),
         ],
       ),
+      @argparse.Command(
+        "metadata",
+        about="Extract common Info dictionary fields and XMP metadata previews.",
+        flags=[
+          @argparse.FlagArg(
+            "json",
+            long="json",
+            about="write compact JSON instead of Markdown",
+          ),
+        ],
+        options=[
+          @argparse.OptionArg(
+            "max-bytes",
+            long="max-bytes",
+            about="maximum XMP bytes to include in the preview",
+            default_values=["160"],
+          ),
+        ],
+        positionals=[
+          @argparse.PositionArg(
+            "input",
+            about="input PDF path",
+            num_args=@argparse.ValueRange::single(),
+          ),
+        ],
+      ),
     ],
   )
 }
@@ -243,6 +286,12 @@ fn parse() -> PdfSkillCommand {
         int_value(sub, "limit", 20),
         flag(sub, "decode"),
         int_value(sub, "max-bytes", 96),
+        flag(sub, "json"),
+      )
+    Some(("metadata", sub)) =>
+      Metadata(
+        required_value(sub, "input"),
+        int_value(sub, "max-bytes", 160),
         flag(sub, "json"),
       )
     Some((name, _)) => die("pdfskill: unexpected subcommand: \{name}", 2)
@@ -732,6 +781,19 @@ fn inspect_object(input : PdfInput, hit : PdfObjectHit) -> PdfObjectSummary {
 }
 
 ///|
+fn parse_object(input : PdfInput, hit : PdfObjectHit) -> @syntax.PdfObject? {
+  match object_view(input, hit) {
+    Some(view) => {
+      let parsed = @syntax.pdf_parse_indirect_object_from_view(view) catch {
+        _ => return None
+      }
+      Some(parsed.object)
+    }
+    None => None
+  }
+}
+
+///|
 fn summary_contains(
   summary : PdfObjectSummary,
   view : BytesView?,
@@ -981,6 +1043,166 @@ fn stream_summaries(
     }
   }
   out
+}
+
+///|
+fn pdf_string_text(bytes : Bytes) -> String {
+  if bytes.length() >= 2 &&
+    bytes[0].to_int() == 0xFE &&
+    bytes[1].to_int() == 0xFF {
+    let output : Array[Byte] = []
+    let mut index = 2
+    while index + 1 < bytes.length() {
+      if bytes[index].to_int() == 0 {
+        output.push(bytes[index + 1])
+      } else {
+        output.push(b'.')
+      }
+      index += 2
+    }
+    @utf8.decode_lossy(Bytes::from_array(output))
+  } else {
+    @utf8.decode_lossy(bytes)
+  }
+}
+
+///|
+fn object_text_value(object : @syntax.PdfObject) -> String? {
+  match object {
+    PdfString(bytes) => Some(pdf_string_text(bytes))
+    PdfNameObject(name) => Some(pdf_name_text(name))
+    PdfInteger(value) => Some(value.to_string())
+    PdfIndirect(number) => Some("ref:\{number}")
+    _ => None
+  }
+}
+
+///|
+fn lookup_text_value(dict : @syntax.PdfObject, key : String) -> String? {
+  match lookup_object(dict, key) {
+    Some(value) => object_text_value(value)
+    None => None
+  }
+}
+
+///|
+fn first_metadata_value(current : String, next : String?) -> String {
+  if current != "-" {
+    current
+  } else {
+    next.unwrap_or("-")
+  }
+}
+
+///|
+fn has_info_metadata(dict : @syntax.PdfObject) -> Bool {
+  lookup_object(dict, "/Title") is Some(_) ||
+  lookup_object(dict, "/Author") is Some(_) ||
+  lookup_object(dict, "/Subject") is Some(_) ||
+  lookup_object(dict, "/Keywords") is Some(_) ||
+  lookup_object(dict, "/Creator") is Some(_) ||
+  lookup_object(dict, "/Producer") is Some(_) ||
+  lookup_object(dict, "/CreationDate") is Some(_) ||
+  lookup_object(dict, "/ModDate") is Some(_)
+}
+
+///|
+fn is_xmp_metadata_object(
+  summary : PdfObjectSummary,
+  view : BytesView?,
+) -> Bool {
+  summary.type_name == "/Metadata" ||
+  summary.subtype_name == "/XML" ||
+  (match view {
+    Some(bytes) => count_occurrences(bytes, "<x:xmpmeta") > 0
+    None => false
+  })
+}
+
+///|
+fn metadata_summary(input : PdfInput, max_bytes : Int) -> PdfMetadataSummary {
+  let scan = scan_pdf(input)
+  let mut info_objects = 0
+  let mut title = "-"
+  let mut author = "-"
+  let mut subject = "-"
+  let mut keywords = "-"
+  let mut creator = "-"
+  let mut producer = "-"
+  let mut creation_date = "-"
+  let mut mod_date = "-"
+  let mut xmp_objects = 0
+  let mut xmp_preview = "-"
+  for hit in scan.object_hits {
+    let summary = inspect_object(input, hit)
+    match parse_object(input, hit) {
+      Some(object) =>
+        match object_dictionary(object) {
+          Some(dict) =>
+            if has_info_metadata(dict) {
+              info_objects += 1
+              title = first_metadata_value(
+                title,
+                lookup_text_value(dict, "/Title"),
+              )
+              author = first_metadata_value(
+                author,
+                lookup_text_value(dict, "/Author"),
+              )
+              subject = first_metadata_value(
+                subject,
+                lookup_text_value(dict, "/Subject"),
+              )
+              keywords = first_metadata_value(
+                keywords,
+                lookup_text_value(dict, "/Keywords"),
+              )
+              creator = first_metadata_value(
+                creator,
+                lookup_text_value(dict, "/Creator"),
+              )
+              producer = first_metadata_value(
+                producer,
+                lookup_text_value(dict, "/Producer"),
+              )
+              creation_date = first_metadata_value(
+                creation_date,
+                lookup_text_value(dict, "/CreationDate"),
+              )
+              mod_date = first_metadata_value(
+                mod_date,
+                lookup_text_value(dict, "/ModDate"),
+              )
+            }
+          None => ()
+        }
+      None => ()
+    }
+    let view = object_view(input, hit)
+    if summary.has_stream && is_xmp_metadata_object(summary, view) {
+      xmp_objects += 1
+      if xmp_preview == "-" {
+        match stream_summary(input, summary, true, max_bytes) {
+          Some(stream) => xmp_preview = stream.preview
+          None => ()
+        }
+      }
+    }
+  }
+  {
+    path: input.path,
+    info_objects,
+    title,
+    author,
+    subject,
+    keywords,
+    creator,
+    producer,
+    creation_date,
+    mod_date,
+    xmp_objects,
+    xmp_preview,
+  }
 }
 
 ///|
@@ -1363,6 +1585,59 @@ fn run_streams(
 }
 
 ///|
+fn metadata_json(summary : PdfMetadataSummary) -> String {
+  Json::object({
+    "author": Json::string(summary.author),
+    "creation_date": Json::string(summary.creation_date),
+    "creator": Json::string(summary.creator),
+    "info_objects": int_json(summary.info_objects),
+    "keywords": Json::string(summary.keywords),
+    "mod_date": Json::string(summary.mod_date),
+    "path": Json::string(summary.path),
+    "producer": Json::string(summary.producer),
+    "subject": Json::string(summary.subject),
+    "title": Json::string(summary.title),
+    "xmp_objects": int_json(summary.xmp_objects),
+    "xmp_preview": Json::string(summary.xmp_preview),
+  }).stringify() +
+  "\n"
+}
+
+///|
+fn metadata_markdown(summary : PdfMetadataSummary) -> String {
+  (
+    $|# PDF Metadata
+    $|
+    $|- path: `\{summary.path}`
+    $|- info objects: \{summary.info_objects}
+    $|- title: \{summary.title}
+    $|- author: \{summary.author}
+    $|- subject: \{summary.subject}
+    $|- keywords: \{summary.keywords}
+    $|- creator: \{summary.creator}
+    $|- producer: \{summary.producer}
+    $|- creation date: \{summary.creation_date}
+    $|- mod date: \{summary.mod_date}
+    $|- xmp objects: \{summary.xmp_objects}
+    $|- xmp preview: `\{summary.xmp_preview}`
+    $|
+  )
+}
+
+///|
+fn run_metadata(input : String, max_bytes : Int, as_json : Bool) -> Unit {
+  let summary = metadata_summary(read_pdf_input(input), max_bytes)
+  let out = if as_json {
+    metadata_json(summary)
+  } else {
+    metadata_markdown(summary)
+  }
+  @miniio.stdout.write_text(out) catch {
+    err => die("pdfskill: failed to write stdout: \{err}", 1)
+  }
+}
+
+///|
 fn main {
   match parse() {
     Brief(input, as_json, output) => run_brief(input, as_json, output)
@@ -1372,5 +1647,7 @@ fn main {
       run_objects(input, limit, contains, as_json)
     Streams(input, limit, decode, max_bytes, as_json) =>
       run_streams(input, limit, decode, max_bytes, as_json)
+    Metadata(input, max_bytes, as_json) =>
+      run_metadata(input, max_bytes, as_json)
   }
 }

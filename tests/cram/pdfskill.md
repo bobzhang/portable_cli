@@ -16,7 +16,8 @@ pandoc tests/cram/fixtures/pandoc-report.md \
 ```
 
 The smaller `active-action.pdf` is hand-authored so the active-content risk
-case has tiny, stable object offsets.
+case has tiny, stable object offsets. `metadata-info.pdf` is also hand-authored
+and keeps Info dictionary and XMP metadata fields stable.
 
 ## CLI Flags
 
@@ -27,6 +28,7 @@ Top-level:
 - `map`: list indirect object candidates with byte offsets.
 - `objects`: parse and summarize indirect objects, dictionaries, and streams.
 - `streams`: list PDF streams and optionally decode bounded previews.
+- `metadata`: extract common Info dictionary fields and XMP metadata previews.
 - `-h, --help`, `-V, --version`: standard generated `@argparse` help/version flags.
 
 `brief`:
@@ -58,6 +60,12 @@ Top-level:
 - `--decode`: decode supported filters before previewing stream bytes.
 - `--limit <limit>`: maximum streams to print. Default: `20`.
 - `--max-bytes <max-bytes>`: maximum bytes to include in each preview. Default: `96`.
+
+`metadata`:
+
+- `input`: input PDF path.
+- `--json`: write compact JSON instead of Markdown.
+- `--max-bytes <max-bytes>`: maximum XMP bytes to include in the preview. Default: `160`.
 
 ## Pandoc-Generated PDF
 
@@ -260,6 +268,36 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/active-action.pdf"; moon -
 ```mooncram
 $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/pandoc-report.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- streams --json --decode --max-bytes 32 --limit 1 "$fixture"
 {"decode":true,"limit":1,"listed":1,"max_bytes":32,"path":"tests/cram/fixtures/pandoc-report.pdf","streams":[{"decoded_bytes":"3212","decode_status":"ok","filters":"/FlateDecode","generation":0,"length":"973","object":14,"offset":15,"preview":" q 1 0 0 1 72 719.99999 cm 0 g 0","raw_bytes":973,"raw_start":66,"subtype":"-","type":"-"}]}
+```
+
+## Metadata Extraction
+
+`metadata` extracts common Info dictionary fields from parsed objects and detects
+XMP metadata streams. The command is intentionally lightweight: it reports the
+fields it can prove from object dictionaries without requiring a full PDF object
+graph.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/metadata-info.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- metadata "$fixture"
+# PDF Metadata
+
+- path: `tests/cram/fixtures/metadata-info.pdf`
+- info objects: 1
+- title: Portable PDF Fixture
+- author: MoonBit Agent
+- subject: -
+- keywords: -
+- creator: pdfskill cram
+- producer: portable_cli
+- creation date: D:20260530000000Z
+- mod date: -
+- xmp objects: 1
+- xmp preview: `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF><rdf:Description><dc:title>Portable PDF</dc:title></rdf:Description></rdf:RDF></x:xmpmeta>`
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/metadata-info.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- metadata --json --max-bytes 40 "$fixture"
+{"author":"MoonBit Agent","creation_date":"D:20260530000000Z","creator":"pdfskill cram","info_objects":1,"keywords":"-","mod_date":"-","path":"tests/cram/fixtures/metadata-info.pdf","producer":"portable_cli","subject":"-","title":"Portable PDF Fixture","xmp_objects":1,"xmp_preview":"<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf"}
 ```
 
 ## Bundled Skill Artifact
