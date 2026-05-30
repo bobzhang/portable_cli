@@ -5,15 +5,39 @@ uses `bobzhang/pdflite/reader` for header and `startxref` parsing, then reports
 byte-level object and risk signals that are useful before handing a file to a
 heavier PDF renderer or extractor.
 
-The PDF examples use the checked fixture
-`tests/cram/fixtures/active-action.pdf`. Keeping the PDF as a fixture makes the
-documentation readable and keeps the expected object offsets stable.
+The PDF examples use checked fixtures under `tests/cram/fixtures`. Keeping PDFs
+as fixtures makes the documentation readable and keeps expected object offsets
+stable. `pandoc-report.pdf` is generated from Markdown with Pandoc and Tectonic:
+
+```sh
+pandoc tests/cram/fixtures/pandoc-report.md \
+  --pdf-engine=tectonic \
+  -o tests/cram/fixtures/pandoc-report.pdf
+```
+
+The smaller `active-action.pdf` is hand-authored so the active-content risk
+case has tiny, stable object offsets.
+
+## Pandoc-Generated PDF
+
+The Pandoc fixture represents a normal documentation PDF. `doctor` should route
+it as low risk while still reporting the real PDF version, `startxref`, EOF
+marker, and object count.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/pandoc-report.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- doctor "$fixture"
+pdfskill doctor: tests/cram/fixtures/pandoc-report.pdf
+ok header: PDF 1.5
+ok startxref: 18661
+ok eof: 1
+ok objects: 18
+info risk: low
+```
 
 ## Doctor Summary
 
-`doctor` is the fastest first pass. It confirms the header, checks for
-`startxref` and EOF markers, counts indirect object candidates, and emits a
-single risk label.
+`doctor` is also useful for suspicious PDFs. This fixture intentionally contains
+`/OpenAction`, so the risk label is `active-content`.
 
 ```mooncram
 $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/active-action.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- doctor "$fixture"
