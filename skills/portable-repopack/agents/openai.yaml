@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable Repopack"
+  short_description: "Pack repo context with WASM"
+  default_prompt: "Use $portable-repopack to pack this repository into concise Markdown context."
