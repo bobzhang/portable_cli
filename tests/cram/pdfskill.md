@@ -26,6 +26,7 @@ Top-level:
 - `doctor`: run quick structural checks and print pass/warn lines.
 - `map`: list indirect object candidates with byte offsets.
 - `objects`: parse and summarize indirect objects, dictionaries, and streams.
+- `streams`: list PDF streams and optionally decode bounded previews.
 - `-h, --help`, `-V, --version`: standard generated `@argparse` help/version flags.
 
 `brief`:
@@ -49,6 +50,14 @@ Top-level:
 - `--json`: write compact JSON instead of Markdown.
 - `--limit <limit>`: maximum matching objects to print. Default: `40`.
 - `--contains <text>`: only include objects whose raw bytes or summary contain this text.
+
+`streams`:
+
+- `input`: input PDF path.
+- `--json`: write compact JSON instead of Markdown.
+- `--decode`: decode supported filters before previewing stream bytes.
+- `--limit <limit>`: maximum streams to print. Default: `20`.
+- `--max-bytes <max-bytes>`: maximum bytes to include in each preview. Default: `96`.
 
 ## Pandoc-Generated PDF
 
@@ -207,6 +216,50 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/active-action.pdf"; moon -
 ```mooncram
 $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/active-action.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- objects --json --limit 2 "$fixture"
 {"contains":null,"limit":2,"listed":2,"objects":[{"filters":"-","generation":0,"kind":"dict","length":"-","note":"-","object":1,"offset":9,"stream":false,"subtype":"-","type":"/Catalog"},{"filters":"-","generation":0,"kind":"dict","length":"-","note":"-","object":2,"offset":76,"stream":false,"subtype":"-","type":"/Pages"}],"path":"tests/cram/fixtures/active-action.pdf"}
+```
+
+## Stream Preview
+
+`streams` focuses on stream payloads. Without `--decode`, previews show the raw
+compressed bytes. With `--decode`, supported filters such as `/FlateDecode`,
+`/ASCIIHexDecode`, `/ASCII85Decode`, `/RunLengthDecode`, and `/LZWDecode` are
+decoded before producing a bounded, single-line preview.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/pandoc-report.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- streams --decode --max-bytes 80 --limit 2 "$fixture"
+# PDF Streams
+
+- path: `tests/cram/fixtures/pandoc-report.pdf`
+- listed: 2
+- limit: 2
+- decode: true
+- max bytes: 80
+
+| object | generation | offset | raw start | raw bytes | length | filters | decoded bytes | status | preview |
+|---:|---:|---:|---:|---:|---:|---|---:|---|---|
+| 14 | 0 | 15 | 66 | 973 | 973 | /FlateDecode | 3212 | ok | ` q 1 0 0 1 72 719.99999 cm 0 g 0 G 0 G 0 g 0 G 0 g 0 G 0 g 0 G 0 g 0 G 0 g BT /F` |
+| 30 | 0 | 1057 | 1108 | 314 | 314 | /FlateDecode | 553 | ok | `/CIDInit /ProcSet findresource begin.12 dict begin.begincmap./CMapName /IHAIZV+L` |
+```
+
+PDFs without streams produce an empty table instead of failing.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/active-action.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- streams --limit 3 "$fixture"
+# PDF Streams
+
+- path: `tests/cram/fixtures/active-action.pdf`
+- listed: 0
+- limit: 3
+- decode: false
+- max bytes: 96
+
+| object | generation | offset | raw start | raw bytes | length | filters | decoded bytes | status | preview |
+|---:|---:|---:|---:|---:|---:|---|---:|---|---|
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/pandoc-report.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- streams --json --decode --max-bytes 32 --limit 1 "$fixture"
+{"decode":true,"limit":1,"listed":1,"max_bytes":32,"path":"tests/cram/fixtures/pandoc-report.pdf","streams":[{"decoded_bytes":"3212","decode_status":"ok","filters":"/FlateDecode","generation":0,"length":"973","object":14,"offset":15,"preview":" q 1 0 0 1 72 719.99999 cm 0 g 0","raw_bytes":973,"raw_start":66,"subtype":"-","type":"-"}]}
 ```
 
 ## Bundled Skill Artifact

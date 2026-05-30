@@ -47,11 +47,22 @@ struct PdfObjectSummary {
 }
 
 ///|
+struct PdfStreamSummary {
+  object : PdfObjectSummary
+  raw_start : Int
+  raw_bytes : Int
+  decoded_bytes : String
+  decode_status : String
+  preview : String
+}
+
+///|
 enum PdfSkillCommand {
   Brief(String, Bool, String?)
   Doctor(String)
   Map(String, Int)
   Objects(String, Int, String?, Bool)
+  Streams(String, Int, Bool, Int, Bool)
 }
 
 ///|
@@ -159,6 +170,43 @@ fn command() -> @argparse.Command {
           ),
         ],
       ),
+      @argparse.Command(
+        "streams",
+        about="List PDF streams and optionally decode bounded previews.",
+        flags=[
+          @argparse.FlagArg(
+            "json",
+            long="json",
+            about="write compact JSON instead of Markdown",
+          ),
+          @argparse.FlagArg(
+            "decode",
+            long="decode",
+            about="decode supported filters before previewing stream bytes",
+          ),
+        ],
+        options=[
+          @argparse.OptionArg(
+            "limit",
+            long="limit",
+            about="maximum streams to print",
+            default_values=["20"],
+          ),
+          @argparse.OptionArg(
+            "max-bytes",
+            long="max-bytes",
+            about="maximum bytes to include in each preview",
+            default_values=["96"],
+          ),
+        ],
+        positionals=[
+          @argparse.PositionArg(
+            "input",
+            about="input PDF path",
+            num_args=@argparse.ValueRange::single(),
+          ),
+        ],
+      ),
     ],
   )
 }
@@ -187,6 +235,14 @@ fn parse() -> PdfSkillCommand {
         required_value(sub, "input"),
         int_value(sub, "limit", 40),
         option(sub, "contains"),
+        flag(sub, "json"),
+      )
+    Some(("streams", sub)) =>
+      Streams(
+        required_value(sub, "input"),
+        int_value(sub, "limit", 20),
+        flag(sub, "decode"),
+        int_value(sub, "max-bytes", 96),
         flag(sub, "json"),
       )
     Some((name, _)) => die("pdfskill: unexpected subcommand: \{name}", 2)
@@ -585,6 +641,23 @@ fn lookup_filters_text(dict : @syntax.PdfObject) -> String {
 }
 
 ///|
+fn split_filter_text(text : String) -> Array[String] {
+  let filters : Array[String] = []
+  if text == "-" || text == "" {
+    return filters
+  }
+  let mut start = 0
+  for index in 0..<text.length() {
+    if text[index].to_int() == b','.to_int() {
+      filters.push(text[start:index].to_owned())
+      start = index + 1
+    }
+  }
+  filters.push(text[start:].to_owned())
+  filters
+}
+
+///|
 fn object_summary_from_parsed(
   hit : PdfObjectHit,
   object : @syntax.PdfObject,
@@ -698,6 +771,213 @@ fn object_summaries(
     let summary = inspect_object(input, hit)
     if summary_contains(summary, view, needle) {
       out.push(summary)
+    }
+  }
+  out
+}
+
+///|
+fn skip_stream_newline(view : BytesView, start : Int) -> Int {
+  if start < view.length() && view[start] == b'\r' {
+    if start + 1 < view.length() && view[start + 1] == b'\n' {
+      start + 2
+    } else {
+      start + 1
+    }
+  } else if start < view.length() && view[start] == b'\n' {
+    start + 1
+  } else {
+    start
+  }
+}
+
+///|
+fn trim_stream_end_newline(view : BytesView, start : Int, end : Int) -> Int {
+  let mut finish = end
+  if finish > start && view[finish - 1] == b'\n' {
+    finish -= 1
+    if finish > start && view[finish - 1] == b'\r' {
+      finish -= 1
+    }
+  } else if finish > start && view[finish - 1] == b'\r' {
+    finish -= 1
+  }
+  finish
+}
+
+///|
+fn stream_declared_length(summary : PdfObjectSummary) -> Int? {
+  let value = @string.parse_int(summary.length) catch { _ => return None }
+  Some(value)
+}
+
+///|
+fn stream_raw_view(
+  input : PdfInput,
+  summary : PdfObjectSummary,
+) -> (BytesView, Int, String)? {
+  let object_view = match object_view(input, summary.hit) {
+    Some(value) => value
+    None => return None
+  }
+  let stream_token = find_occurrence_from(object_view, 0, "stream")
+  if stream_token < 0 {
+    return None
+  }
+  let endstream = find_occurrence_from(
+    object_view,
+    stream_token + 6,
+    "endstream",
+  )
+  if endstream < 0 {
+    return None
+  }
+  let data_start_rel = skip_stream_newline(object_view, stream_token + 6)
+  let fallback_end_rel = trim_stream_end_newline(
+    object_view, data_start_rel, endstream,
+  )
+  let (data_end_rel, status) = match stream_declared_length(summary) {
+    Some(length) if length >= 0 &&
+      data_start_rel + length <= object_view.length() =>
+      (data_start_rel + length, "ok")
+    Some(_) => (fallback_end_rel, "length-mismatch")
+    None => (fallback_end_rel, "length-unresolved")
+  }
+  let length = if data_end_rel >= data_start_rel {
+    data_end_rel - data_start_rel
+  } else {
+    0
+  }
+  let cursor = @core.byte_cursor_of_bytes(input.data)
+  let absolute_start = summary.hit.offset + data_start_rel
+  let raw = cursor.view_at(absolute_start, length) catch { _ => return None }
+  Some((raw, absolute_start, status))
+}
+
+///|
+fn decode_single_filter(filter : String, data : Bytes) -> Bytes? {
+  if filter == "/FlateDecode" || filter == "/Fl" {
+    Some(@flate.pdf_flate_decode(data) catch { _ => return None })
+  } else if filter == "/ASCIIHexDecode" || filter == "/AHx" {
+    Some(@codec.pdf_ascii_hex_decode(data) catch { _ => return None })
+  } else if filter == "/ASCII85Decode" || filter == "/A85" {
+    Some(@codec.pdf_ascii85_decode(data) catch { _ => return None })
+  } else if filter == "/RunLengthDecode" || filter == "/RL" {
+    Some(@codec.pdf_run_length_decode(data))
+  } else if filter == "/LZWDecode" || filter == "/LZW" {
+    Some(@codec.pdf_lzw_decode(data) catch { _ => return None })
+  } else if filter == "/Crypt" {
+    Some(data)
+  } else {
+    None
+  }
+}
+
+///|
+fn decode_stream(raw : BytesView, filters : Array[String]) -> (Bytes?, String) {
+  if filters.length() == 0 {
+    return (Some(raw.to_owned()), "identity")
+  }
+  let mut current = raw.to_owned()
+  for filter in filters {
+    match decode_single_filter(filter, current) {
+      Some(decoded) => current = decoded
+      None => return (None, "unsupported-or-failed:\{filter}")
+    }
+  }
+  (Some(current), "ok")
+}
+
+///|
+fn preview_bytes(data : BytesView, max_bytes : Int) -> String {
+  let cap = if max_bytes < 0 {
+    0
+  } else if max_bytes < data.length() {
+    max_bytes
+  } else {
+    data.length()
+  }
+  let output : Array[Byte] = []
+  for index in 0..<cap {
+    let value = data[index].to_int()
+    if value >= 32 &&
+      value <= 126 &&
+      value != b'|'.to_int() &&
+      value != b'`'.to_int() {
+      output.push(data[index])
+    } else {
+      output.push(b'.')
+    }
+  }
+  @utf8.decode_lossy(Bytes::from_array(output))
+}
+
+///|
+fn stream_summary(
+  input : PdfInput,
+  object : PdfObjectSummary,
+  decode : Bool,
+  max_bytes : Int,
+) -> PdfStreamSummary? {
+  match stream_raw_view(input, object) {
+    Some((raw, raw_start, status)) =>
+      if decode {
+        let filters = split_filter_text(object.filters)
+        let (decoded, decode_status) = decode_stream(raw, filters)
+        match decoded {
+          Some(bytes) =>
+            Some({
+              object,
+              raw_start,
+              raw_bytes: raw.length(),
+              decoded_bytes: bytes.length().to_string(),
+              decode_status,
+              preview: preview_bytes(bytes, max_bytes),
+            })
+          None =>
+            Some({
+              object,
+              raw_start,
+              raw_bytes: raw.length(),
+              decoded_bytes: "-",
+              decode_status,
+              preview: preview_bytes(raw, max_bytes),
+            })
+        }
+      } else {
+        Some({
+          object,
+          raw_start,
+          raw_bytes: raw.length(),
+          decoded_bytes: "-",
+          decode_status: status,
+          preview: preview_bytes(raw, max_bytes),
+        })
+      }
+    None => None
+  }
+}
+
+///|
+fn stream_summaries(
+  input : PdfInput,
+  limit : Int,
+  decode : Bool,
+  max_bytes : Int,
+) -> Array[PdfStreamSummary] {
+  let cap = if limit < 0 { 0 } else { limit }
+  let scan = scan_pdf(input)
+  let out : Array[PdfStreamSummary] = []
+  for hit in scan.object_hits {
+    if out.length() >= cap {
+      break
+    }
+    let object = inspect_object(input, hit)
+    if object.has_stream {
+      match stream_summary(input, object, decode, max_bytes) {
+        Some(summary) => out.push(summary)
+        None => ()
+      }
     }
   }
   out
@@ -989,6 +1269,100 @@ fn run_objects(
 }
 
 ///|
+fn stream_summary_json(summary : PdfStreamSummary) -> Json {
+  Json::object({
+    "decoded_bytes": Json::string(summary.decoded_bytes),
+    "decode_status": Json::string(summary.decode_status),
+    "filters": Json::string(summary.object.filters),
+    "generation": int_json(summary.object.hit.generation),
+    "length": Json::string(summary.object.length),
+    "object": int_json(summary.object.hit.number),
+    "offset": int_json(summary.object.hit.offset),
+    "preview": Json::string(summary.preview),
+    "raw_bytes": int_json(summary.raw_bytes),
+    "raw_start": int_json(summary.raw_start),
+    "subtype": Json::string(summary.object.subtype_name),
+    "type": Json::string(summary.object.type_name),
+  })
+}
+
+///|
+fn stream_summaries_json(
+  input : String,
+  limit : Int,
+  decode : Bool,
+  max_bytes : Int,
+  summaries : Array[PdfStreamSummary],
+) -> String {
+  Json::object({
+    "decode": Json::boolean(decode),
+    "limit": int_json(limit),
+    "listed": int_json(summaries.length()),
+    "max_bytes": int_json(max_bytes),
+    "path": Json::string(input),
+    "streams": Json::array(
+      [
+        for summary in summaries => stream_summary_json(summary)
+      ],
+    ),
+  }).stringify() +
+  "\n"
+}
+
+///|
+fn stream_summaries_markdown(
+  input : String,
+  limit : Int,
+  decode : Bool,
+  max_bytes : Int,
+  summaries : Array[PdfStreamSummary],
+) -> String {
+  let mut out =
+    $|# PDF Streams
+    $|
+    $|- path: `\{input}`
+    $|- listed: \{summaries.length()}
+    $|- limit: \{limit}
+    $|- decode: \{bool_text(decode)}
+    $|- max bytes: \{max_bytes}
+    $|
+    $|| object | generation | offset | raw start | raw bytes | length | filters | decoded bytes | status | preview |
+    $||---:|---:|---:|---:|---:|---:|---|---:|---|---|
+    $|
+  for summary in summaries {
+    out += (
+      $|| \{summary.object.hit.number} | \{summary.object.hit.generation} | \{summary.object.hit.offset} | \{summary.raw_start} | \{summary.raw_bytes} | \{summary.object.length} | \{summary.object.filters} | \{summary.decoded_bytes} | \{summary.decode_status} | `\{summary.preview}` |
+      $|
+    )
+  }
+  out
+}
+
+///|
+fn run_streams(
+  input : String,
+  limit : Int,
+  decode : Bool,
+  max_bytes : Int,
+  as_json : Bool,
+) -> Unit {
+  let summaries = stream_summaries(
+    read_pdf_input(input),
+    limit,
+    decode,
+    max_bytes,
+  )
+  let out = if as_json {
+    stream_summaries_json(input, limit, decode, max_bytes, summaries)
+  } else {
+    stream_summaries_markdown(input, limit, decode, max_bytes, summaries)
+  }
+  @miniio.stdout.write_text(out) catch {
+    err => die("pdfskill: failed to write stdout: \{err}", 1)
+  }
+}
+
+///|
 fn main {
   match parse() {
     Brief(input, as_json, output) => run_brief(input, as_json, output)
@@ -996,5 +1370,7 @@ fn main {
     Map(input, limit) => run_map(input, limit)
     Objects(input, limit, contains, as_json) =>
       run_objects(input, limit, contains, as_json)
+    Streams(input, limit, decode, max_bytes, as_json) =>
+      run_streams(input, limit, decode, max_bytes, as_json)
   }
 }
