@@ -1,0 +1,7 @@
+// import {
+//   "bobzhang/portable_cli" @lib,
+// }
+
+options(
+  "is-main": true,
+)

@@ -1,0 +1,40 @@
+#!/bin/sh
+set -eu
+
+moon check --target wasm
+moon test --target wasm
+
+tmp=".tmp/portable-cli-smoke"
+rm -rf "$tmp"
+mkdir -p "$tmp/src/nested"
+printf 'alpha\n' > "$tmp/src/a.txt"
+printf 'beta\n' > "$tmp/src/nested/b.txt"
+printf 'MoonBit wasm wasm portable CLI\nMoonBit CLI\n' > "$tmp/input.txt"
+
+moon run --target wasm cmd/cow --width 24 portable wasm cli >/tmp/portable-cli-cow.out
+grep 'portable wasm cli' /tmp/portable-cli-cow.out >/dev/null
+
+moon run --target wasm cmd/tree --depth 2 "$tmp/src" >/tmp/portable-cli-tree.out
+grep 'nested/' /tmp/portable-cli-tree.out >/dev/null
+
+moon run --target wasm cmd/pulse --file "$tmp/input.txt" --top 3 --width 12 >/tmp/portable-cli-pulse.out
+grep 'wasm' /tmp/portable-cli-pulse.out >/dev/null
+
+moon build --target wasm cmd/cow cmd/tree cmd/pulse
+
+if command -v wasmtime >/dev/null 2>&1; then
+  cow_wasm=$(find _build/wasm/debug/build -path '*cmd/cow/*.wasm' | head -n 1)
+  tree_wasm=$(find _build/wasm/debug/build -path '*cmd/tree/*.wasm' | head -n 1)
+  pulse_wasm=$(find _build/wasm/debug/build -path '*cmd/pulse/*.wasm' | head -n 1)
+
+  wasmtime run --dir .::. "$cow_wasm" --width 24 portable wasm cli >/tmp/portable-cli-cow-wasmtime.out
+  grep 'portable wasm cli' /tmp/portable-cli-cow-wasmtime.out >/dev/null
+
+  wasmtime run --dir .::. "$tree_wasm" --depth 2 "$tmp/src" >/tmp/portable-cli-tree-wasmtime.out
+  grep 'nested/' /tmp/portable-cli-tree-wasmtime.out >/dev/null
+
+  wasmtime run --dir .::. "$pulse_wasm" --file "$tmp/input.txt" --top 3 --width 12 >/tmp/portable-cli-pulse-wasmtime.out
+  grep 'wasm' /tmp/portable-cli-pulse-wasmtime.out >/dev/null
+fi
+
+rm -rf "$tmp"
