@@ -367,6 +367,15 @@ fn bool_text(value : Bool) -> String {
 }
 
 ///|
+fn startxref_text(scan : PdfScan) -> String {
+  if scan.startxref < 0 {
+    "missing"
+  } else {
+    scan.startxref.to_string()
+  }
+}
+
+///|
 fn int_json(value : Int) -> Json {
   Json::number(value.to_double(), repr=value.to_string())
 }
@@ -399,48 +408,35 @@ fn scan_json(scan : PdfScan) -> String {
 
 ///|
 fn scan_markdown(scan : PdfScan) -> String {
-  "# PDF Skill Brief\n\n" +
-  "- path: `" +
-  scan.path +
-  "`\n- version: " +
-  scan.version +
-  "\n- bytes: " +
-  scan.input_bytes.to_string() +
-  "\n- startxref: " +
-  (if scan.startxref < 0 { "missing" } else { scan.startxref.to_string() }) +
-  "\n- eof markers: " +
-  scan.eof_markers.to_string() +
-  "\n- object candidates: " +
-  scan.object_candidates.to_string() +
-  "\n- page candidates: " +
-  scan.page_candidates.to_string() +
-  "\n- stream candidates: " +
-  scan.stream_candidates.to_string() +
-  "\n- xref tokens: " +
-  scan.xref_tokens.to_string() +
-  "\n- encrypted: " +
-  bool_text(scan.encrypted) +
-  "\n- javascript names: " +
-  scan.javascript.to_string() +
-  "\n- active action names: " +
-  scan.active_actions.to_string() +
-  "\n- embedded file names: " +
-  scan.embedded_files.to_string() +
-  "\n- acroform: " +
-  bool_text(scan.acroform) +
-  "\n- xfa: " +
-  bool_text(scan.xfa) +
-  "\n- image names: " +
-  scan.images.to_string() +
-  "\n- object streams: " +
-  scan.object_streams.to_string() +
-  "\n- linearized: " +
-  bool_text(scan.linearized) +
-  "\n- risk: " +
-  risk_label(scan) +
-  "\n\n## Agent Notes\n\n" +
-  "- This is byte-level triage, not page rendering or full semantic extraction.\n" +
-  "- Escalate to a renderer/parser when signatures, forms, layout, or attachments matter.\n"
+  (
+    $|# PDF Skill Brief
+    $|
+    $|- path: `\{scan.path}`
+    $|- version: \{scan.version}
+    $|- bytes: \{scan.input_bytes}
+    $|- startxref: \{startxref_text(scan)}
+    $|- eof markers: \{scan.eof_markers}
+    $|- object candidates: \{scan.object_candidates}
+    $|- page candidates: \{scan.page_candidates}
+    $|- stream candidates: \{scan.stream_candidates}
+    $|- xref tokens: \{scan.xref_tokens}
+    $|- encrypted: \{bool_text(scan.encrypted)}
+    $|- javascript names: \{scan.javascript}
+    $|- active action names: \{scan.active_actions}
+    $|- embedded file names: \{scan.embedded_files}
+    $|- acroform: \{bool_text(scan.acroform)}
+    $|- xfa: \{bool_text(scan.xfa)}
+    $|- image names: \{scan.images}
+    $|- object streams: \{scan.object_streams}
+    $|- linearized: \{bool_text(scan.linearized)}
+    $|- risk: \{risk_label(scan)}
+    $|
+    $|## Agent Notes
+    $|
+    $|- This is byte-level triage, not page rendering or full semantic extraction.
+    $|- Escalate to a renderer/parser when signatures, forms, layout, or attachments matter.
+    $|
+  )
 }
 
 ///|
@@ -473,31 +469,36 @@ fn run_brief(input : String, as_json : Bool, output : String?) -> Unit {
 
 ///|
 fn doctor_line(kind : String, label : String, value : String) -> String {
-  kind + " " + label + ": " + value + "\n"
+  "\{kind} \{label}: \{value}"
 }
 
 ///|
 fn run_doctor(input : String) -> Unit {
   let data = read_pdf_bytes(input)
   let scan = scan_pdf(input, data)
-  let mut out = "pdfskill doctor: " + input + "\n"
-  out += doctor_line("ok", "header", "PDF " + scan.version)
-  out += if scan.startxref >= 0 {
+  let startxref_line = if scan.startxref >= 0 {
     doctor_line("ok", "startxref", scan.startxref.to_string())
   } else {
     doctor_line("warn", "startxref", "missing")
   }
-  out += if scan.eof_markers > 0 {
+  let eof_line = if scan.eof_markers > 0 {
     doctor_line("ok", "eof", scan.eof_markers.to_string())
   } else {
     doctor_line("warn", "eof", "missing")
   }
-  out += if scan.object_candidates > 0 {
+  let objects_line = if scan.object_candidates > 0 {
     doctor_line("ok", "objects", scan.object_candidates.to_string())
   } else {
     doctor_line("warn", "objects", "none detected")
   }
-  out += doctor_line("info", "risk", risk_label(scan))
+  let out =
+    $|pdfskill doctor: \{input}
+    $|ok header: PDF \{scan.version}
+    $|\{startxref_line}
+    $|\{eof_line}
+    $|\{objects_line}
+    $|info risk: \{risk_label(scan)}
+    $|
   @miniio.stdout.write_text(out) catch {
     err => die("pdfskill: failed to write stdout: \{err}", 1)
   }
@@ -507,19 +508,20 @@ fn run_doctor(input : String) -> Unit {
 fn run_map(input : String, limit : Int) -> Unit {
   let data = read_pdf_bytes(input)
   let hits = scan_objects(data, limit)
-  let mut out = "# PDF Object Map\n\n- path: `" +
-    input +
-    "`\n- listed: " +
-    hits.length().to_string() +
-    "\n\n| object | generation | offset |\n|---:|---:|---:|\n"
+  let mut out =
+    $|# PDF Object Map
+    $|
+    $|- path: `\{input}`
+    $|- listed: \{hits.length()}
+    $|
+    $|| object | generation | offset |
+    $||---:|---:|---:|
+    $|
   for hit in hits {
-    out += "| " +
-      hit.number.to_string() +
-      " | " +
-      hit.generation.to_string() +
-      " | " +
-      hit.offset.to_string() +
-      " |\n"
+    out += (
+      $|| \{hit.number} | \{hit.generation} | \{hit.offset} |
+      $|
+    )
   }
   @miniio.stdout.write_text(out) catch {
     err => die("pdfskill: failed to write stdout: \{err}", 1)
