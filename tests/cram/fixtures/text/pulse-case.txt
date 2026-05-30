@@ -1,0 +1,2 @@
+Moon moon WASM
+Moon CLI wasm

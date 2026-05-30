@@ -18,6 +18,30 @@ pandoc tests/cram/fixtures/pandoc-report.md \
 The smaller `active-action.pdf` is hand-authored so the active-content risk
 case has tiny, stable object offsets.
 
+## CLI Flags
+
+Top-level:
+
+- `brief`: write an agent-readable Markdown or JSON triage report.
+- `doctor`: run quick structural checks and print pass/warn lines.
+- `map`: list indirect object candidates with byte offsets.
+- `-h, --help`, `-V, --version`: standard generated `@argparse` help/version flags.
+
+`brief`:
+
+- `input`: input PDF path.
+- `--json`: write compact JSON instead of Markdown.
+- `-o, --output <output>`: write the report to a guest-visible file.
+
+`doctor`:
+
+- `input`: input PDF path.
+
+`map`:
+
+- `input`: input PDF path.
+- `--limit <limit>`: maximum object candidates to print. Default: `40`.
+
 ## Pandoc-Generated PDF
 
 The Pandoc fixture represents a normal documentation PDF. `doctor` should route

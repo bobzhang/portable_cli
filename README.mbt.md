@@ -69,9 +69,9 @@ doubles as runnable command documentation:
 moon cram test tests/cram
 ```
 
-See `tests/cram/` for the checked examples. `htmlfmt.md` and `pdfskill.md`
-are written as focused command documentation, while `wasm_cli.md` covers the
-remaining general CLI examples.
+See `tests/cram/` for the checked examples. Each portable command has a focused
+Markdown page with a CLI flag summary, fixtures, and checked transcripts;
+`wasm_cli.md` is the suite index.
 
 The command tests invoke packages with `moon run --target wasm` instead of
 native `.exe` binaries, and the skill test invokes its bundled `.wasm` with
