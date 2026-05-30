@@ -26,4 +26,5 @@ description = "Portable MoonBit CLI examples that compile to WASIp1 and run acro
 import {
   "moonbit-community/miniio@0.2.0",
   "bobzhang/html_parser@0.1.7",
+  "bobzhang/pdflite@0.1.37",
 }

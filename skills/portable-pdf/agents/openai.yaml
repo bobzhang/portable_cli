@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable PDF"
+  short_description: "Inspect PDFs portably with moonrun"
+  default_prompt: "Use $portable-pdf to inspect this PDF portably with moonrun."

@@ -1,0 +1,15 @@
+import {
+  "bobzhang/pdflite/core",
+  "bobzhang/pdflite/reader",
+  "moonbit-community/miniio",
+  "moonbitlang/core/argparse",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/json",
+  "moonbitlang/core/string",
+}
+
+supported_targets = "wasm"
+
+options(
+  is_main: true,
+)

@@ -14,6 +14,7 @@ printf '# Smoke\n\nPortable repo pack.\n' > "$tmp/README.md"
 printf '<section><p>File <em>input</em></p></section>\n' > "$tmp/input.html"
 printf 'MoonBit wasm wasm portable CLI\nMoonBit CLI\n' > "$tmp/input.txt"
 printf '{"items":[{"name":"moon"},{"name":"wasm"}],"ok":true}\n' > "$tmp/data.json"
+printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Catalog /Pages 2 0 R /OpenAction 3 0 R >>' 'endobj' '2 0 obj' '<< /Type /Pages /Count 1 /Kids [3 0 R] >>' 'endobj' '3 0 obj' '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>' 'endobj' 'xref' '0 4' '0000000000 65535 f' 'trailer' '<< /Root 1 0 R /Size 4 >>' 'startxref' '187' '%%EOF' > "$tmp/input.pdf"
 
 moon run --target wasm cmd/cow -- --width 24 portable wasm cli >/tmp/portable-cli-cow.out
 grep 'portable wasm cli' /tmp/portable-cli-cow.out >/dev/null
@@ -26,6 +27,9 @@ grep 'wasm' /tmp/portable-cli-jqlet.out >/dev/null
 moon run --target wasm cmd/jqlet -- --file "$tmp/data.json" --get ok --compact --output "$tmp/ok.json"
 grep 'true' "$tmp/ok.json" >/dev/null
 
+moon run --target wasm cmd/pdfskill -- doctor "$tmp/input.pdf" >/tmp/portable-cli-pdfskill.out
+grep 'info risk: active-content' /tmp/portable-cli-pdfskill.out >/dev/null
+
 moon run --target wasm cmd/repopack -- --max-files 8 --max-chars 80 --output "$tmp/repo.md" "$tmp"
 grep 'Portable repo pack' "$tmp/repo.md" >/dev/null
 
@@ -35,13 +39,14 @@ grep 'nested/' /tmp/portable-cli-tree.out >/dev/null
 moon run --target wasm cmd/pulse -- --file "$tmp/input.txt" --top 3 --width 12 >/tmp/portable-cli-pulse.out
 grep 'wasm' /tmp/portable-cli-pulse.out >/dev/null
 
-moon build --target wasm cmd/cow cmd/htmlfmt cmd/jqlet cmd/repopack cmd/tree cmd/pulse
+moon build --target wasm cmd/cow cmd/htmlfmt cmd/jqlet cmd/pdfskill cmd/repopack cmd/tree cmd/pulse
 
 if command -v wasmtime >/dev/null 2>&1; then
   moonbit_runtime="wasm/moonbit-sys-unstable.wat"
   cow_wasm=$(find _build/wasm/debug/build -path '*cmd/cow/*.wasm' | head -n 1)
   htmlfmt_wasm=$(find _build/wasm/debug/build -path '*cmd/htmlfmt/*.wasm' | head -n 1)
   jqlet_wasm=$(find _build/wasm/debug/build -path '*cmd/jqlet/*.wasm' | head -n 1)
+  pdfskill_wasm=$(find _build/wasm/debug/build -path '*cmd/pdfskill/*.wasm' | head -n 1)
   repopack_wasm=$(find _build/wasm/debug/build -path '*cmd/repopack/*.wasm' | head -n 1)
   tree_wasm=$(find _build/wasm/debug/build -path '*cmd/tree/*.wasm' | head -n 1)
   pulse_wasm=$(find _build/wasm/debug/build -path '*cmd/pulse/*.wasm' | head -n 1)
@@ -56,6 +61,9 @@ if command -v wasmtime >/dev/null 2>&1; then
   grep 'wasm' /tmp/portable-cli-jqlet-wasmtime.out >/dev/null
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$jqlet_wasm" --file "$tmp/data.json" --get ok --compact --output "$tmp/ok-wasmtime.json"
   grep 'true' "$tmp/ok-wasmtime.json" >/dev/null
+
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" doctor "$tmp/input.pdf" >/tmp/portable-cli-pdfskill-wasmtime.out
+  grep 'info risk: active-content' /tmp/portable-cli-pdfskill-wasmtime.out >/dev/null
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$repopack_wasm" --max-files 8 --max-chars 80 --output "$tmp/repo-wasmtime.md" "$tmp"
   grep 'Portable repo pack' "$tmp/repo-wasmtime.md" >/dev/null

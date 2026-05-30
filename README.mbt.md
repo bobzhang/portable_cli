@@ -13,6 +13,9 @@ declarative CLI parsing.
   `--compact`, `--indent`, `--sanitize`, `--strict`, and `--output`.
 - `cmd/jqlet`: JSON formatter and simple path extractor. It reads stdin or
   `--file`, supports `--get`, `--raw`, `--compact`, `--indent`, and `--output`.
+- `cmd/pdfskill`: portable PDF triage built on `bobzhang/pdflite/reader`. It
+  reports header/startxref metadata, object offsets, risk signals such as
+  active actions or attachments, and supports `brief`, `doctor`, and `map`.
 - `cmd/repopack`: repository context packer for WASI-visible text files. It
   walks directories deterministically, skips common build/dependency folders by
   default, caps file content, and emits Markdown.
@@ -27,6 +30,7 @@ declarative CLI parsing.
 moon run --target wasm cmd/cow -- portable wasm cli
 moon run --target wasm cmd/htmlfmt -- '<article><p>Hello <b>MoonBit</b></p></article>'
 printf '{"items":[{"name":"moon"}]}\n' | moon run --target wasm cmd/jqlet -- --get 'items[0].name' --raw
+moon run --target wasm cmd/pdfskill -- brief input.pdf
 moon run --target wasm cmd/repopack -- --max-files 12 --max-chars 2000 .
 moon run --target wasm cmd/tree -- --depth 2 .
 printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
@@ -37,7 +41,7 @@ printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
 Build the WASIp1 modules:
 
 ```sh
-moon build --target wasm cmd/cow cmd/htmlfmt cmd/jqlet cmd/repopack cmd/tree cmd/pulse
+moon build --target wasm cmd/cow cmd/htmlfmt cmd/jqlet cmd/pdfskill cmd/repopack cmd/tree cmd/pulse
 ```
 
 Then run a built module with explicit preopened paths:
@@ -73,10 +77,11 @@ native `.exe` binaries, and the skill test invokes its bundled `.wasm` with
 
 ## Codex Skill
 
-This repo also includes a prototype Codex skill at
-`skills/portable-repopack`. It bundles a release WASM artifact and runs it
-through `moonrun`, so the agent does not need a MoonBit build step:
+This repo also includes prototype Codex skills under `skills/`. They bundle
+release WASM artifacts and run through `moonrun`, so the agent does not need a
+MoonBit build step:
 
 ```sh
 moonrun skills/portable-repopack/assets/repopack.wasm --max-files 80 --max-chars 8000 .
+moonrun skills/portable-pdf/assets/pdfskill.wasm doctor input.pdf
 ```
