@@ -18,7 +18,7 @@ portable_cli commands: cmd/cow, cmd/htmlfmt, cmd/jqlet, cmd/pdfskill, cmd/repopa
 ## Cow Help
 
 ```mooncram
-$ moon -C "$TESTDIR/../.." run --target wasm cmd/cow -- --help | sed -n '1,12p'
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/cow -- --help
 Usage: cow [options] [message...]
 
 Wrap text in a speech bubble and render a small ASCII cow.
@@ -31,6 +31,8 @@ Options:
   -V, --version        Show version information.
   -t, --think          use a thought bubble tail
   -w, --width <width>  bubble width [env: COW_WIDTH] [default: 40]
+  -e, --eyes <eyes>    two-character eyes [default: oo]
+  --tongue <tongue>    cow tongue [default:   ]
 ```
 
 ## Cow From Arguments
@@ -53,9 +55,9 @@ $ moon -C "$TESTDIR/../.." run --target wasm cmd/cow -- --width 18 portable wasm
 control the tail, eyes, and tongue.
 
 ```mooncram
-$ printf 'moonbit cram docs\n' | COW_WIDTH=12 moon -C "$TESTDIR/../.." run --target wasm cmd/cow -- --think --eyes ^^ --tongue U
+$ printf 'MoonBit cram docs\n' | COW_WIDTH=12 moon -C "$TESTDIR/../.." run --target wasm cmd/cow -- --think --eyes ^^ --tongue U
  ______________
-/ moonbit cram \
+/ MoonBit cram \
 \ docs         /
  --------------
         o   ^__^
@@ -63,31 +65,6 @@ $ printf 'moonbit cram docs\n' | COW_WIDTH=12 moon -C "$TESTDIR/../.." run --tar
             (__)\       )\/\
              U  ||----w |
                 ||     ||
-```
-
-## Htmlfmt Fragment
-
-```mooncram
-$ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- '<article><p>Hello <b>MoonBit</b></p></article>'
-<article>
-  <p>Hello <b>MoonBit</b></p>
-</article>
-```
-
-## Htmlfmt Compact Stdin
-
-```mooncram
-$ printf '<p class=demo>Hello <b>MoonBit</b></p>\n' | moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --compact
-<p class="demo">Hello <b>MoonBit</b></p>
-```
-
-## Htmlfmt Output File
-
-```mooncram
-$ root="$TESTDIR/../.."; in=".tmp/moon-cram-htmlfmt.html"; out=".tmp/moon-cram-htmlfmt-out.html"; printf '<section><p>File <em>input</em></p></section>\n' > "$root/$in"; moon -C "$root" run --target wasm cmd/htmlfmt -- --file "$in" --output "$out"; cat "$root/$out"; rm -f "$root/$in" "$root/$out"
-<section>
-  <p>File <em>input</em></p>
-</section>
 ```
 
 ## Jqlet Path Extraction
@@ -185,78 +162,6 @@ Bundled WASM.
 ~~~~moonbit
 pub fn answer() -> Int { 42 }
 ~~~~
-```
-
-## PDF Skill Brief
-
-`pdfskill` uses `pdflite/reader` for PDF header/startxref parsing and then
-prints an agent-readable triage report from portable byte scans.
-
-```mooncram
-$ root="$TESTDIR/../.."; tmp=".tmp/moon-cram-pdfskill"; rm -rf "$root/$tmp"; mkdir -p "$root/$tmp"; printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Catalog /Pages 2 0 R /OpenAction 3 0 R >>' 'endobj' '2 0 obj' '<< /Type /Pages /Count 1 /Kids [3 0 R] >>' 'endobj' '3 0 obj' '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>' 'endobj' 'xref' '0 4' '0000000000 65535 f' 'trailer' '<< /Root 1 0 R /Size 4 >>' 'startxref' '187' '%%EOF' > "$root/$tmp/sample.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- brief "$tmp/sample.pdf"; rm -rf "$root/$tmp"
-# PDF Skill Brief
-
-- path: `.tmp/moon-cram-pdfskill/sample.pdf`
-- version: 1.4
-- bytes: 286
-- startxref: 187
-- eof markers: 1
-- object candidates: 3
-- page candidates: 1
-- stream candidates: 0
-- xref tokens: 2
-- encrypted: false
-- javascript names: 0
-- active action names: 1
-- embedded file names: 0
-- acroform: false
-- xfa: false
-- image names: 0
-- object streams: 0
-- linearized: false
-- risk: active-content
-
-## Agent Notes
-
-- This is byte-level triage, not page rendering or full semantic extraction.
-- Escalate to a renderer/parser when signatures, forms, layout, or attachments matter.
-```
-
-## PDF Skill Doctor And Map
-
-```mooncram
-$ root="$TESTDIR/../.."; tmp=".tmp/moon-cram-pdfskill"; rm -rf "$root/$tmp"; mkdir -p "$root/$tmp"; printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Catalog /Pages 2 0 R /OpenAction 3 0 R >>' 'endobj' '2 0 obj' '<< /Type /Pages /Count 1 /Kids [3 0 R] >>' 'endobj' '3 0 obj' '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>' 'endobj' 'xref' '0 4' '0000000000 65535 f' 'trailer' '<< /Root 1 0 R /Size 4 >>' 'startxref' '187' '%%EOF' > "$root/$tmp/sample.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- doctor "$tmp/sample.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- map --limit 3 "$tmp/sample.pdf"; rm -rf "$root/$tmp"
-pdfskill doctor: .tmp/moon-cram-pdfskill/sample.pdf
-ok header: PDF 1.4
-ok startxref: 187
-ok eof: 1
-ok objects: 3
-info risk: active-content
-# PDF Object Map
-
-- path: `.tmp/moon-cram-pdfskill/sample.pdf`
-- listed: 3
-
-| object | generation | offset |
-|---:|---:|---:|
-| 1 | 0 | 9 |
-| 2 | 0 | 76 |
-| 3 | 0 | 133 |
-```
-
-## PDF Skill Bundled WASM
-
-The PDF skill artifact is also committed under `skills/portable-pdf/assets`, so
-agents can run it directly through `moonrun` without rebuilding the command.
-
-```mooncram
-$ root="$TESTDIR/../.."; tmp=".tmp/moon-cram-pdfskill-bundled"; rm -rf "$root/$tmp"; mkdir -p "$root/$tmp"; printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Catalog /Pages 2 0 R /OpenAction 3 0 R >>' 'endobj' '2 0 obj' '<< /Type /Pages /Count 1 /Kids [3 0 R] >>' 'endobj' '3 0 obj' '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>' 'endobj' 'xref' '0 4' '0000000000 65535 f' 'trailer' '<< /Root 1 0 R /Size 4 >>' 'startxref' '187' '%%EOF' > "$root/$tmp/sample.pdf"; (cd "$root" && moonrun skills/portable-pdf/assets/pdfskill.wasm doctor "$tmp/sample.pdf"); rm -rf "$root/$tmp"
-pdfskill doctor: .tmp/moon-cram-pdfskill-bundled/sample.pdf
-ok header: PDF 1.4
-ok startxref: 187
-ok eof: 1
-ok objects: 3
-info risk: active-content
 ```
 
 ## Tree Default Filtering
