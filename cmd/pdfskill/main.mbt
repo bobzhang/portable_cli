@@ -90,6 +90,7 @@ enum PdfSkillCommand {
   Streams(String, Int, Bool, Int, Bool)
   Metadata(String, Int, Bool)
   Text(String, Int, Bool)
+  MakeText(String?, String, String, Array[String])
 }
 
 ///|
@@ -286,6 +287,37 @@ fn command() -> @argparse.Command {
           ),
         ],
       ),
+      @argparse.Command(
+        "make-text",
+        about="Create a simple one-page text PDF.",
+        options=[
+          @argparse.OptionArg(
+            "output",
+            short='o',
+            long="output",
+            about="write PDF bytes to this file; stdout is used when omitted",
+          ),
+          @argparse.OptionArg(
+            "title",
+            long="title",
+            about="PDF title metadata",
+            default_values=["Portable PDF"],
+          ),
+          @argparse.OptionArg(
+            "page-size",
+            long="page-size",
+            about="page size: letter or a4",
+            default_values=["letter"],
+          ),
+        ],
+        positionals=[
+          @argparse.PositionArg(
+            "text",
+            about="text words; stdin is used when omitted",
+            num_args=@argparse.ValueRange(lower=0),
+          ),
+        ],
+      ),
     ],
   )
 }
@@ -336,6 +368,13 @@ fn parse() -> PdfSkillCommand {
         int_value(sub, "max-chars", 2000),
         flag(sub, "json"),
       )
+    Some(("make-text", sub)) =>
+      MakeText(
+        option(sub, "output"),
+        value(sub, "title", "Portable PDF"),
+        value(sub, "page-size", "letter"),
+        values(sub, "text"),
+      )
     Some((name, _)) => die("pdfskill: unexpected subcommand: \{name}", 2)
     None => die("pdfskill: missing subcommand", 2)
   }
@@ -352,6 +391,11 @@ fn option(matches : @argparse.Matches, name : String) -> String? {
     Some(items) => items.get(0)
     None => None
   }
+}
+
+///|
+fn values(matches : @argparse.Matches, name : String) -> Array[String] {
+  matches.values.get(name).unwrap_or([])
 }
 
 ///|
@@ -1470,6 +1514,131 @@ fn text_summary(input : PdfInput, max_chars : Int) -> PdfTextSummary {
 }
 
 ///|
+fn make_text_input(words : Array[String]) -> String {
+  if words.is_empty() {
+    let input = @miniio.stdin.read_all().text() catch {
+        err => die("pdfskill: failed to read stdin: \{err}", 1)
+      }
+    let trimmed = input.trim().to_owned()
+    if trimmed == "" {
+      "Hello from portable pdfskill"
+    } else {
+      trimmed
+    }
+  } else {
+    words.join(" ")
+  }
+}
+
+///|
+fn pdf_escape_literal(text : String) -> String {
+  let bytes = @utf8.encode(text)
+  let mut out = ""
+  for index in 0..<bytes.length() {
+    match bytes[index] {
+      b'\\' => out += "\\\\"
+      b'(' => out += "\\("
+      b')' => out += "\\)"
+      b'\r' | b'\n' | b'\t' => out += " "
+      _ => out += @utf8.decode_lossy(Bytes::from_array([bytes[index]]))
+    }
+  }
+  out
+}
+
+///|
+fn make_text_page_size(name : String) -> (Int, Int) {
+  let normalized = name.to_lower()
+  if normalized == "letter" {
+    (612, 792)
+  } else if normalized == "a4" {
+    (595, 842)
+  } else {
+    die("pdfskill: invalid --page-size: \{name} (expected letter or a4)", 2)
+  }
+}
+
+///|
+fn make_text_lines(text : String) -> Array[String] {
+  let lines : Array[String] = []
+  for line in text.split("\n") {
+    let trimmed = line.trim().to_owned()
+    if trimmed == "" {
+      lines.push(" ")
+    } else {
+      lines.push(trimmed)
+    }
+  }
+  if lines.is_empty() {
+    lines.push("Hello from portable pdfskill")
+  }
+  lines
+}
+
+///|
+fn make_text_content(text : String, page_height : Int) -> String {
+  let mut out = "BT\n/F1 12 Tf\n72 \{page_height - 72} Td\n16 TL\n"
+  let lines = make_text_lines(text)
+  for index in 0..<lines.length() {
+    if index > 0 {
+      out += "T*\n"
+    }
+    out += "(\{pdf_escape_literal(lines[index])}) Tj\n"
+  }
+  out + "ET\n"
+}
+
+///|
+fn pdf_xref_offset(offset : Int) -> String {
+  offset.to_string().pad_start(10, '0') + " 00000 n \n"
+}
+
+///|
+fn make_text_pdf(text : String, title : String, page_size : String) -> String {
+  let (width, height) = make_text_page_size(page_size)
+  let content = make_text_content(text, height)
+  let mut pdf = "%PDF-1.4\n"
+  let offsets : Array[Int] = []
+  offsets.push(pdf.length())
+  pdf += "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+  offsets.push(pdf.length())
+  pdf += "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
+  offsets.push(pdf.length())
+  pdf += "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 \{width} \{height}] /Resources << /Font << /F1 6 0 R >> >> /Contents 4 0 R >>\nendobj\n"
+  offsets.push(pdf.length())
+  pdf += "4 0 obj\n<< /Length \{content.length()} >>\nstream\n\{content}endstream\nendobj\n"
+  offsets.push(pdf.length())
+  pdf += "5 0 obj\n<< /Title (\{pdf_escape_literal(title)}) /Creator (pdfskill make-text) /Producer (portable_cli) >>\nendobj\n"
+  offsets.push(pdf.length())
+  pdf += "6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n"
+  let xref = pdf.length()
+  pdf += "xref\n0 7\n0000000000 65535 f \n"
+  for offset in offsets {
+    pdf += pdf_xref_offset(offset)
+  }
+  pdf += "trailer\n<< /Root 1 0 R /Info 5 0 R /Size 7 >>\nstartxref\n\{xref}\n%%EOF\n"
+  pdf
+}
+
+///|
+fn write_pdf_output(path : String?, pdf : String) -> Unit {
+  match path {
+    Some(output) => {
+      @miniio.write_text_file(output, pdf) catch {
+        err => die("pdfskill: failed to write \{output}: \{err}", 1)
+      }
+      @miniio.stdout.write_text("pdfskill make-text: wrote \{output}\n") catch {
+        err => die("pdfskill: failed to write stdout: \{err}", 1)
+      }
+    }
+    None =>
+      @miniio.stdout.write_text(pdf) catch {
+        err => die("pdfskill: failed to write stdout: \{err}", 1)
+      }
+  }
+}
+
+///|
 fn risk_label(scan : PdfScan) -> String {
   if scan.encrypted {
     "encrypted"
@@ -1946,6 +2115,17 @@ fn run_text(input : String, max_chars : Int, as_json : Bool) -> Unit {
 }
 
 ///|
+fn run_make_text(
+  output : String?,
+  title : String,
+  page_size : String,
+  words : Array[String],
+) -> Unit {
+  let text = make_text_input(words)
+  write_pdf_output(output, make_text_pdf(text, title, page_size))
+}
+
+///|
 fn main {
   match parse() {
     Brief(input, as_json, output) => run_brief(input, as_json, output)
@@ -1958,5 +2138,7 @@ fn main {
     Metadata(input, max_bytes, as_json) =>
       run_metadata(input, max_bytes, as_json)
     Text(input, max_chars, as_json) => run_text(input, max_chars, as_json)
+    MakeText(output, title, page_size, words) =>
+      run_make_text(output, title, page_size, words)
   }
 }

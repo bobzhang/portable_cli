@@ -13,9 +13,9 @@ declarative CLI parsing.
   `--compact`, `--indent`, `--sanitize`, `--strict`, and `--output`.
 - `cmd/jqlet`: JSON formatter and simple path extractor. It reads stdin or
   `--file`, supports `--get`, `--raw`, `--compact`, `--indent`, and `--output`.
-- `cmd/pdfskill`: portable PDF triage built on `bobzhang/pdflite/reader`. It
-  reports header/startxref metadata, object offsets, risk signals such as
-  active actions or attachments, and supports `brief`, `doctor`, and `map`.
+- `cmd/pdfskill`: portable PDF tooling built on small `bobzhang/pdflite`
+  packages. It reports structure/risk signals, inspects objects and streams,
+  extracts lightweight metadata/text, and can create a simple one-page text PDF.
 - `cmd/repopack`: repository context packer for WASI-visible text files. It
   walks directories deterministically, skips common build/dependency folders by
   default, caps file content, and emits Markdown.
@@ -31,6 +31,7 @@ moon run --target wasm cmd/cow -- portable wasm cli
 moon run --target wasm cmd/htmlfmt -- '<article><p>Hello <b>MoonBit</b></p></article>'
 printf '{"items":[{"name":"moon"}]}\n' | moon run --target wasm cmd/jqlet -- --get 'items[0].name' --raw
 moon run --target wasm cmd/pdfskill -- brief input.pdf
+moon run --target wasm cmd/pdfskill -- make-text -o output.pdf Hello from MoonBit
 moon run --target wasm cmd/repopack -- --max-files 12 --max-chars 2000 .
 moon run --target wasm cmd/tree -- --depth 2 .
 printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
@@ -86,4 +87,5 @@ MoonBit build step:
 ```sh
 moonrun skills/portable-repopack/assets/repopack.wasm --max-files 80 --max-chars 8000 .
 moonrun skills/portable-pdf/assets/pdfskill.wasm doctor input.pdf
+moonrun skills/portable-pdf/assets/pdfskill.wasm text input.pdf
 ```

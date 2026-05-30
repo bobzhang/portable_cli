@@ -30,6 +30,7 @@ Top-level:
 - `streams`: list PDF streams and optionally decode bounded previews.
 - `metadata`: extract common Info dictionary fields and XMP metadata previews.
 - `text`: best-effort text extraction from decoded content streams.
+- `make-text`: create a simple one-page text PDF.
 - `-h, --help`, `-V, --version`: standard generated `@argparse` help/version flags.
 
 `brief`:
@@ -73,6 +74,13 @@ Top-level:
 - `input`: input PDF path.
 - `--json`: write compact JSON instead of Markdown.
 - `--max-chars <max-chars>`: maximum extracted characters to print. Default: `2000`.
+
+`make-text`:
+
+- `text`: text words; stdin is used when omitted.
+- `-o, --output <output>`: write PDF bytes to this file; stdout is used when omitted.
+- `--title <title>`: PDF title metadata. Default: `Portable PDF`.
+- `--page-size <page-size>`: page size, either `letter` or `a4`. Default: `letter`.
 
 ## Pandoc-Generated PDF
 
@@ -334,6 +342,62 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/metadata-info.pdf"; moon -
 {"extracted_chars":16,"fragments":1,"path":"tests/cram/fixtures/metadata-info.pdf","streams_scanned":1,"text":"Metadata fixture"}
 ```
 
+## Simple PDF Creation
+
+`make-text` creates a small one-page PDF with a Helvetica text stream, a valid
+xref/trailer, and an Info dictionary. This gives agents a portable way to emit a
+PDF without depending on a host PDF generator.
+
+```mooncram
+$ root="$TESTDIR/../.."; mkdir -p "$root/.tmp"; moon -C "$root" run --target wasm cmd/pdfskill -- make-text -o .tmp/pdfskill-made.pdf --title "Generated Fixture" Portable skill generated PDF
+pdfskill make-text: wrote .tmp/pdfskill-made.pdf
+```
+
+The generated PDF can immediately be inspected by the other portable commands.
+
+```mooncram
+$ root="$TESTDIR/../.."; moon -C "$root" run --target wasm cmd/pdfskill -- doctor .tmp/pdfskill-made.pdf
+pdfskill doctor: .tmp/pdfskill-made.pdf
+ok header: PDF 1.4
+ok startxref: 529
+ok eof: 1
+ok objects: 6
+info risk: low
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; moon -C "$root" run --target wasm cmd/pdfskill -- metadata .tmp/pdfskill-made.pdf
+# PDF Metadata
+
+- path: `.tmp/pdfskill-made.pdf`
+- info objects: 1
+- title: Generated Fixture
+- author: -
+- subject: -
+- keywords: -
+- creator: pdfskill make-text
+- producer: portable_cli
+- creation date: -
+- mod date: -
+- xmp objects: 0
+- xmp preview: `-`
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; moon -C "$root" run --target wasm cmd/pdfskill -- text .tmp/pdfskill-made.pdf
+# PDF Text
+
+- path: `.tmp/pdfskill-made.pdf`
+- streams scanned: 1
+- fragments: 1
+- extracted chars: 28
+- mode: best-effort literal and hex strings from decoded content streams
+
+## Text
+
+Portable skill generated PDF
+```
+
 ## Bundled Skill Artifact
 
 The Codex skill commits the release Wasm artifact under
@@ -348,4 +412,21 @@ ok startxref: 187
 ok eof: 1
 ok objects: 3
 info risk: active-content
+```
+
+The bundled artifact includes the richer extraction commands too:
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/metadata-info.pdf"; (cd "$root" && moonrun skills/portable-pdf/assets/pdfskill.wasm text "$fixture")
+# PDF Text
+
+- path: `tests/cram/fixtures/metadata-info.pdf`
+- streams scanned: 1
+- fragments: 1
+- extracted chars: 16
+- mode: best-effort literal and hex strings from decoded content streams
+
+## Text
+
+Metadata fixture
 ```
