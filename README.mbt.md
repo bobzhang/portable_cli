@@ -74,11 +74,11 @@ programs.
 ## Codex Skill
 
 This repo also includes a prototype Codex skill at
-`skills/portable-repopack`. It uses the release `cmd/repopack` WASM artifact
-through Wasmtime to pack a project directory into Markdown context:
+`skills/portable-repopack`. It builds release WASM with Moon and runs the
+artifact through `moonrun`, so the agent does not need runtime-specific flags:
 
 ```sh
-skills/portable-repopack/scripts/repopack-wasm.sh \
+skills/portable-repopack/scripts/repopack-moonrun.sh \
   --workdir . \
   -- --max-files 80 --max-chars 8000 .
 ```

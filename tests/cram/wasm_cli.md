@@ -1,8 +1,9 @@
 # WASM CLI Examples
 
 These examples are executable documentation for the portable CLIs. Moon Cram
-checks the transcripts, and every command is run through `moon run --target wasm`
-so the tests cover the `miniio` WASIp1 path instead of native executables.
+checks the transcripts. The command examples run through `moon run --target wasm`
+and the skill wrapper example runs through `moonrun`, so the tests cover the
+`miniio` WASIp1 path instead of native executables.
 
 Use `--` before command arguments when a CLI option starts with `-`; otherwise
 Moon's runner may consume flags such as `--help`.
@@ -147,6 +148,42 @@ Hello MoonBit.
 
 ~~~~moonbit
 fn main { println("hi") }
+~~~~
+```
+
+## Repopack Skill Moon Runner
+
+The skill wrapper builds the same WASM CLI and runs it through `moonrun` from the
+selected workdir, so an agent can use guest-relative paths without direct
+Wasmtime flags.
+
+```mooncram
+$ root="$TESTDIR/../.."; tmp=".tmp/moon-cram-skill-repopack"; rm -rf "$root/$tmp"; mkdir -p "$root/$tmp/src" "$root/$tmp/node_modules/pkg"; printf '# Skill Probe\n\nMoon run wrapper.\n' > "$root/$tmp/README.md"; printf 'pub fn answer() -> Int { 42 }\n' > "$root/$tmp/src/lib.mbt"; printf 'ignored\n' > "$root/$tmp/node_modules/pkg/index.js"; "$root/skills/portable-repopack/scripts/repopack-moonrun.sh" --workdir "$root/$tmp" -- --max-files 4 --max-chars 80 .; rm -rf "$root/$tmp"
+# Repo Pack
+
+- root: `.`
+- files: 2
+- max chars per file: 80
+
+## Included Files
+
+- `README.md` - 33 chars
+- `src/lib.mbt` - 30 chars
+
+## File Contents
+
+### `README.md`
+
+~~~~markdown
+# Skill Probe
+
+Moon run wrapper.
+~~~~
+
+### `src/lib.mbt`
+
+~~~~moonbit
+pub fn answer() -> Int { 42 }
 ~~~~
 ```
 
