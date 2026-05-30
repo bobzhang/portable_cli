@@ -29,6 +29,7 @@ Top-level:
 - `objects`: parse and summarize indirect objects, dictionaries, and streams.
 - `streams`: list PDF streams and optionally decode bounded previews.
 - `metadata`: extract common Info dictionary fields and XMP metadata previews.
+- `text`: best-effort text extraction from decoded content streams.
 - `-h, --help`, `-V, --version`: standard generated `@argparse` help/version flags.
 
 `brief`:
@@ -66,6 +67,12 @@ Top-level:
 - `input`: input PDF path.
 - `--json`: write compact JSON instead of Markdown.
 - `--max-bytes <max-bytes>`: maximum XMP bytes to include in the preview. Default: `160`.
+
+`text`:
+
+- `input`: input PDF path.
+- `--json`: write compact JSON instead of Markdown.
+- `--max-chars <max-chars>`: maximum extracted characters to print. Default: `2000`.
 
 ## Pandoc-Generated PDF
 
@@ -298,6 +305,33 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/metadata-info.pdf"; moon -
 ```mooncram
 $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/metadata-info.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- metadata --json --max-bytes 40 "$fixture"
 {"author":"MoonBit Agent","creation_date":"D:20260530000000Z","creator":"pdfskill cram","info_objects":1,"keywords":"-","mod_date":"-","path":"tests/cram/fixtures/metadata-info.pdf","producer":"portable_cli","subject":"-","title":"Portable PDF Fixture","xmp_objects":1,"xmp_preview":"<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf"}
+```
+
+## Best-Effort Text
+
+`text` decodes stream filters, skips obvious image/font/metadata streams, and
+extracts literal or hex PDF strings from the remaining content streams. It is
+useful for simple generated PDFs and quick previews, but it does not perform
+OCR, layout reconstruction, or full font/CMap decoding.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/metadata-info.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- text "$fixture"
+# PDF Text
+
+- path: `tests/cram/fixtures/metadata-info.pdf`
+- streams scanned: 1
+- fragments: 1
+- extracted chars: 16
+- mode: best-effort literal and hex strings from decoded content streams
+
+## Text
+
+Metadata fixture
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/metadata-info.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- text --json --max-chars 20 "$fixture"
+{"extracted_chars":16,"fragments":1,"path":"tests/cram/fixtures/metadata-info.pdf","streams_scanned":1,"text":"Metadata fixture"}
 ```
 
 ## Bundled Skill Artifact

@@ -73,6 +73,15 @@ struct PdfMetadataSummary {
 }
 
 ///|
+struct PdfTextSummary {
+  path : String
+  streams_scanned : Int
+  fragments : Int
+  extracted_chars : Int
+  text : String
+}
+
+///|
 enum PdfSkillCommand {
   Brief(String, Bool, String?)
   Doctor(String)
@@ -80,6 +89,7 @@ enum PdfSkillCommand {
   Objects(String, Int, String?, Bool)
   Streams(String, Int, Bool, Int, Bool)
   Metadata(String, Int, Bool)
+  Text(String, Int, Bool)
 }
 
 ///|
@@ -250,6 +260,32 @@ fn command() -> @argparse.Command {
           ),
         ],
       ),
+      @argparse.Command(
+        "text",
+        about="Best-effort text extraction from decoded content streams.",
+        flags=[
+          @argparse.FlagArg(
+            "json",
+            long="json",
+            about="write compact JSON instead of Markdown",
+          ),
+        ],
+        options=[
+          @argparse.OptionArg(
+            "max-chars",
+            long="max-chars",
+            about="maximum extracted characters to print",
+            default_values=["2000"],
+          ),
+        ],
+        positionals=[
+          @argparse.PositionArg(
+            "input",
+            about="input PDF path",
+            num_args=@argparse.ValueRange::single(),
+          ),
+        ],
+      ),
     ],
   )
 }
@@ -292,6 +328,12 @@ fn parse() -> PdfSkillCommand {
       Metadata(
         required_value(sub, "input"),
         int_value(sub, "max-bytes", 160),
+        flag(sub, "json"),
+      )
+    Some(("text", sub)) =>
+      Text(
+        required_value(sub, "input"),
+        int_value(sub, "max-chars", 2000),
         flag(sub, "json"),
       )
     Some((name, _)) => die("pdfskill: unexpected subcommand: \{name}", 2)
@@ -1206,6 +1248,228 @@ fn metadata_summary(input : PdfInput, max_bytes : Int) -> PdfMetadataSummary {
 }
 
 ///|
+fn is_octal_digit(value : Int) -> Bool {
+  value >= b'0'.to_int() && value <= b'7'.to_int()
+}
+
+///|
+fn parse_literal_pdf_string(data : BytesView, start : Int) -> (String, Int)? {
+  if start >= data.length() || data[start] != b'(' {
+    return None
+  }
+  let output : Array[Byte] = []
+  let mut index = start + 1
+  let mut depth = 1
+  while index < data.length() {
+    let byte = data[index]
+    if byte == b'\\' {
+      if index + 1 >= data.length() {
+        return None
+      }
+      let next = data[index + 1]
+      match next {
+        b'n' => output.push(b'\n')
+        b'r' => output.push(b'\r')
+        b't' => output.push(b'\t')
+        b'b' | b'f' => output.push(b' ')
+        b'(' | b')' | b'\\' => output.push(next)
+        b'\r' =>
+          if index + 2 < data.length() && data[index + 2] == b'\n' {
+            index += 1
+          }
+        b'\n' => ()
+        _ =>
+          if is_octal_digit(next.to_int()) {
+            let mut value = next.to_int() - b'0'.to_int()
+            let mut consumed = 1
+            while consumed < 3 &&
+                  index + 1 + consumed < data.length() &&
+                  is_octal_digit(data[index + 1 + consumed].to_int()) {
+              value = value * 8 +
+                data[index + 1 + consumed].to_int() -
+                b'0'.to_int()
+              consumed += 1
+            }
+            output.push((value & 0xFF).to_byte())
+            index += consumed - 1
+          } else {
+            output.push(next)
+          }
+      }
+      index += 2
+    } else if byte == b'(' {
+      depth += 1
+      output.push(byte)
+      index += 1
+    } else if byte == b')' {
+      depth -= 1
+      if depth == 0 {
+        return Some((pdf_string_text(Bytes::from_array(output)), index + 1))
+      }
+      output.push(byte)
+      index += 1
+    } else {
+      output.push(byte)
+      index += 1
+    }
+  }
+  None
+}
+
+///|
+fn parse_hex_pdf_string(data : BytesView, start : Int) -> (String, Int)? {
+  if start >= data.length() || data[start] != b'<' {
+    return None
+  }
+  if start + 1 < data.length() && data[start + 1] == b'<' {
+    return None
+  }
+  let output : Array[Byte] = []
+  let mut index = start + 1
+  let mut high : Int? = None
+  while index < data.length() {
+    if data[index] == b'>' {
+      match high {
+        Some(value) => output.push((value << 4).to_byte())
+        None => ()
+      }
+      return Some((pdf_string_text(Bytes::from_array(output)), index + 1))
+    }
+    if !@core.pdf_is_whitespace_byte(data[index].to_int()) {
+      match @syntax.pdf_hex_value(data[index].to_int()) {
+        Some(value) =>
+          match high {
+            Some(first) => {
+              output.push(((first << 4) | value).to_byte())
+              high = None
+            }
+            None => high = Some(value)
+          }
+        None => return None
+      }
+    }
+    index += 1
+  }
+  None
+}
+
+///|
+fn clean_text_fragment(text : String) -> String {
+  let bytes = @utf8.encode(text)
+  let output : Array[Byte] = []
+  for index in 0..<bytes.length() {
+    let value = bytes[index].to_int()
+    if value == b'\n'.to_int() ||
+      value == b'\r'.to_int() ||
+      value == b'\t'.to_int() {
+      output.push(b' ')
+    } else if value >= 32 && value <= 126 {
+      output.push(bytes[index])
+    } else {
+      output.push(b'.')
+    }
+  }
+  @utf8.decode_lossy(Bytes::from_array(output)).trim().to_owned()
+}
+
+///|
+fn append_text_fragment(current : String, fragment : String) -> String {
+  if fragment == "" {
+    current
+  } else if current == "" {
+    fragment
+  } else {
+    current + "\n" + fragment
+  }
+}
+
+///|
+fn stream_text_fragments(data : BytesView, remaining : Int) -> (String, Int) {
+  let mut text = ""
+  let mut fragments = 0
+  let mut index = 0
+  while index < data.length() && text.length() < remaining {
+    let parsed = if data[index] == b'(' {
+      parse_literal_pdf_string(data, index)
+    } else if data[index] == b'<' {
+      parse_hex_pdf_string(data, index)
+    } else {
+      None
+    }
+    match parsed {
+      Some((fragment, next)) => {
+        let cleaned = clean_text_fragment(fragment)
+        if cleaned != "" {
+          text = append_text_fragment(text, cleaned)
+          fragments += 1
+        }
+        index = next
+      }
+      None => index += 1
+    }
+  }
+  if text.length() > remaining {
+    (text[:remaining].to_owned(), fragments)
+  } else {
+    (text, fragments)
+  }
+}
+
+///|
+fn text_candidate_stream(summary : PdfObjectSummary) -> Bool {
+  summary.has_stream &&
+  summary.type_name != "/Metadata" &&
+  summary.subtype_name != "/XML" &&
+  summary.subtype_name != "/Image" &&
+  summary.subtype_name != "/CIDFontType0C" &&
+  summary.subtype_name != "/Type1C" &&
+  summary.subtype_name != "/OpenType"
+}
+
+///|
+fn text_summary(input : PdfInput, max_chars : Int) -> PdfTextSummary {
+  let cap = if max_chars < 0 { 0 } else { max_chars }
+  let scan = scan_pdf(input)
+  let mut streams_scanned = 0
+  let mut fragments = 0
+  let mut text = ""
+  for hit in scan.object_hits {
+    if text.length() >= cap {
+      break
+    }
+    let object = inspect_object(input, hit)
+    if text_candidate_stream(object) {
+      match stream_raw_view(input, object) {
+        Some((raw, _, _)) => {
+          let filters = split_filter_text(object.filters)
+          let (decoded, _) = decode_stream(raw, filters)
+          match decoded {
+            Some(bytes) => {
+              streams_scanned += 1
+              let remaining = cap - text.length()
+              let (chunk, count) = stream_text_fragments(bytes, remaining)
+              if chunk != "" {
+                text = append_text_fragment(text, chunk)
+                fragments += count
+              }
+            }
+            None => ()
+          }
+        }
+        None => ()
+      }
+    }
+  }
+  {
+    path: input.path,
+    streams_scanned,
+    fragments,
+    extracted_chars: text.length(),
+    text,
+  }
+}
+
+///|
 fn risk_label(scan : PdfScan) -> String {
   if scan.encrypted {
     "encrypted"
@@ -1638,6 +1902,50 @@ fn run_metadata(input : String, max_bytes : Int, as_json : Bool) -> Unit {
 }
 
 ///|
+fn text_json(summary : PdfTextSummary) -> String {
+  Json::object({
+    "extracted_chars": int_json(summary.extracted_chars),
+    "fragments": int_json(summary.fragments),
+    "path": Json::string(summary.path),
+    "streams_scanned": int_json(summary.streams_scanned),
+    "text": Json::string(summary.text),
+  }).stringify() +
+  "\n"
+}
+
+///|
+fn text_markdown(summary : PdfTextSummary) -> String {
+  let body = if summary.text == "" {
+    "(no text extracted)"
+  } else {
+    summary.text
+  }
+  (
+    $|# PDF Text
+    $|
+    $|- path: `\{summary.path}`
+    $|- streams scanned: \{summary.streams_scanned}
+    $|- fragments: \{summary.fragments}
+    $|- extracted chars: \{summary.extracted_chars}
+    $|- mode: best-effort literal and hex strings from decoded content streams
+    $|
+    $|## Text
+    $|
+    $|\{body}
+    $|
+  )
+}
+
+///|
+fn run_text(input : String, max_chars : Int, as_json : Bool) -> Unit {
+  let summary = text_summary(read_pdf_input(input), max_chars)
+  let out = if as_json { text_json(summary) } else { text_markdown(summary) }
+  @miniio.stdout.write_text(out) catch {
+    err => die("pdfskill: failed to write stdout: \{err}", 1)
+  }
+}
+
+///|
 fn main {
   match parse() {
     Brief(input, as_json, output) => run_brief(input, as_json, output)
@@ -1649,5 +1957,6 @@ fn main {
       run_streams(input, limit, decode, max_bytes, as_json)
     Metadata(input, max_bytes, as_json) =>
       run_metadata(input, max_bytes, as_json)
+    Text(input, max_chars, as_json) => run_text(input, max_chars, as_json)
   }
 }
