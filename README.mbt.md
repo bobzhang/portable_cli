@@ -20,6 +20,9 @@ declarative CLI parsing.
 - `cmd/repopack`: repository context packer for WASI-visible text files. It
   walks directories deterministically, skips common build/dependency folders by
   default, caps file content, and emits Markdown.
+- `cmd/secretscan`: redacted secret-like value scanner for WASI-visible text
+  files. It helps inspect a repo before packing or sharing context with an
+  agent.
 - `cmd/tree`: deterministic directory tree rendering over guest-visible WASI
   paths. It supports `--depth`, `--all`, and `--dirs-only`.
 - `cmd/pulse`: text statistics and word-frequency bars from stdin or
@@ -34,6 +37,7 @@ printf '{"items":[{"name":"moon"}]}\n' | moon run --target wasm cmd/jqlet -- --g
 moon run --target wasm cmd/pdfskill -- brief input.pdf
 moon run --target wasm cmd/pdfskill -- make-text -o output.pdf Hello from MoonBit
 moon run --target wasm cmd/repopack -- --max-files 12 --max-chars 2000 .
+moon run --target wasm cmd/secretscan -- --fail-on high .
 moon run --target wasm cmd/tree -- --depth 2 .
 printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
 ```
@@ -43,7 +47,7 @@ printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
 Build the WASIp1 modules:
 
 ```sh
-moon build --target wasm cmd/cow cmd/htmlfmt cmd/jqlet cmd/pdfskill cmd/repopack cmd/tree cmd/pulse
+moon build --target wasm cmd/cow cmd/htmlfmt cmd/jqlet cmd/pdfskill cmd/repopack cmd/secretscan cmd/tree cmd/pulse
 ```
 
 Then run a built module with explicit preopened paths:
@@ -87,6 +91,7 @@ MoonBit build step:
 
 ```sh
 moonrun skills/portable-repopack/assets/repopack.wasm --max-files 80 --max-chars 8000 .
+moonrun skills/portable-secretscan/assets/secretscan.wasm --fail-on high .
 moonrun skills/portable-pdf/assets/pdfskill.wasm doctor input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm text input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm attachments --extract-dir attachments input.pdf

@@ -14,6 +14,7 @@ printf '# Smoke\n\nPortable repo pack.\n' > "$tmp/README.md"
 printf '<section><p>File <em>input</em></p></section>\n' > "$tmp/input.html"
 printf 'MoonBit wasm wasm portable CLI\nMoonBit CLI\n' > "$tmp/input.txt"
 printf '{"items":[{"name":"moon"},{"name":"wasm"}],"ok":true}\n' > "$tmp/data.json"
+printf 'OPENAI_API_KEY=sk-test-abcdefghijklmnopqrstuvwxyz1234567890\n' > "$tmp/secrets.env"
 printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Catalog /Pages 2 0 R /OpenAction 3 0 R >>' 'endobj' '2 0 obj' '<< /Type /Pages /Count 1 /Kids [3 0 R] >>' 'endobj' '3 0 obj' '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>' 'endobj' 'xref' '0 4' '0000000000 65535 f' 'trailer' '<< /Root 1 0 R /Size 4 >>' 'startxref' '187' '%%EOF' > "$tmp/input.pdf"
 
 moon run --target wasm cmd/cow -- --width 24 portable wasm cli >/tmp/portable-cli-cow.out
@@ -33,13 +34,16 @@ grep 'info risk: active-content' /tmp/portable-cli-pdfskill.out >/dev/null
 moon run --target wasm cmd/repopack -- --max-files 8 --max-chars 80 --output "$tmp/repo.md" "$tmp"
 grep 'Portable repo pack' "$tmp/repo.md" >/dev/null
 
+moon run --target wasm cmd/secretscan -- "$tmp" >/tmp/portable-cli-secretscan.out
+grep 'openai-style api key' /tmp/portable-cli-secretscan.out >/dev/null
+
 moon run --target wasm cmd/tree -- --depth 2 "$tmp/src" >/tmp/portable-cli-tree.out
 grep 'nested/' /tmp/portable-cli-tree.out >/dev/null
 
 moon run --target wasm cmd/pulse -- --file "$tmp/input.txt" --top 3 --width 12 >/tmp/portable-cli-pulse.out
 grep 'wasm' /tmp/portable-cli-pulse.out >/dev/null
 
-moon build --target wasm cmd/cow cmd/htmlfmt cmd/jqlet cmd/pdfskill cmd/repopack cmd/tree cmd/pulse
+moon build --target wasm cmd/cow cmd/htmlfmt cmd/jqlet cmd/pdfskill cmd/repopack cmd/secretscan cmd/tree cmd/pulse
 
 if command -v wasmtime >/dev/null 2>&1; then
   moonbit_runtime="wasm/moonbit-sys-unstable.wat"
@@ -48,6 +52,7 @@ if command -v wasmtime >/dev/null 2>&1; then
   jqlet_wasm=$(find _build/wasm/debug/build -path '*cmd/jqlet/*.wasm' | head -n 1)
   pdfskill_wasm=$(find _build/wasm/debug/build -path '*cmd/pdfskill/*.wasm' | head -n 1)
   repopack_wasm=$(find _build/wasm/debug/build -path '*cmd/repopack/*.wasm' | head -n 1)
+  secretscan_wasm=$(find _build/wasm/debug/build -path '*cmd/secretscan/*.wasm' | head -n 1)
   tree_wasm=$(find _build/wasm/debug/build -path '*cmd/tree/*.wasm' | head -n 1)
   pulse_wasm=$(find _build/wasm/debug/build -path '*cmd/pulse/*.wasm' | head -n 1)
 
@@ -67,6 +72,9 @@ if command -v wasmtime >/dev/null 2>&1; then
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$repopack_wasm" --max-files 8 --max-chars 80 --output "$tmp/repo-wasmtime.md" "$tmp"
   grep 'Portable repo pack' "$tmp/repo-wasmtime.md" >/dev/null
+
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$secretscan_wasm" "$tmp" >/tmp/portable-cli-secretscan-wasmtime.out
+  grep 'openai-style api key' /tmp/portable-cli-secretscan-wasmtime.out >/dev/null
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$tree_wasm" --depth 2 "$tmp/src" >/tmp/portable-cli-tree-wasmtime.out
   grep 'nested/' /tmp/portable-cli-tree-wasmtime.out >/dev/null

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable Secretscan"
+  short_description: "Scan repo context for secrets with moonrun"
+  default_prompt: "Use $portable-secretscan to scan this repository for redacted secret-like findings before packing or sharing context."
