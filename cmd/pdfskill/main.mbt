@@ -101,6 +101,26 @@ struct PdfLinkSummary {
 }
 
 ///|
+struct PdfFormFieldSummary {
+  object_number : Int
+  field_type : String
+  name : String
+  value : String
+  flags : String
+  kids : String
+  note : String
+}
+
+///|
+struct PdfFormsSummary {
+  path : String
+  acroform_objects : Int
+  xfa_objects : Int
+  fields_found : Int
+  fields : Array[PdfFormFieldSummary]
+}
+
+///|
 enum PdfSkillCommand {
   Brief(String, Bool, String?)
   Doctor(String)
@@ -111,6 +131,7 @@ enum PdfSkillCommand {
   Text(String, Int, Bool)
   Attachments(String, Int, String?, Bool)
   Links(String, Int, Bool)
+  Forms(String, Int, Bool)
   MakeText(String?, String, String, Array[String])
 }
 
@@ -366,6 +387,32 @@ fn command() -> @argparse.Command {
         ],
       ),
       @argparse.Command(
+        "forms",
+        about="Extract AcroForm/XFA field signals from PDF objects.",
+        flags=[
+          @argparse.FlagArg(
+            "json",
+            long="json",
+            about="write compact JSON instead of Markdown",
+          ),
+        ],
+        options=[
+          @argparse.OptionArg(
+            "limit",
+            long="limit",
+            about="maximum fields to print",
+            default_values=["40"],
+          ),
+        ],
+        positionals=[
+          @argparse.PositionArg(
+            "input",
+            about="input PDF path",
+            num_args=@argparse.ValueRange::single(),
+          ),
+        ],
+      ),
+      @argparse.Command(
         "make-text",
         about="Create a simple one-page text PDF.",
         options=[
@@ -455,6 +502,12 @@ fn parse() -> PdfSkillCommand {
       )
     Some(("links", sub)) =>
       Links(
+        required_value(sub, "input"),
+        int_value(sub, "limit", 40),
+        flag(sub, "json"),
+      )
+    Some(("forms", sub)) =>
+      Forms(
         required_value(sub, "input"),
         int_value(sub, "limit", 40),
         flag(sub, "json"),
@@ -2232,6 +2285,7 @@ fn main {
     Attachments(input, limit, extract_dir, as_json) =>
       run_attachments(input, limit, extract_dir, as_json)
     Links(input, limit, as_json) => run_links(input, limit, as_json)
+    Forms(input, limit, as_json) => run_forms(input, limit, as_json)
     MakeText(output, title, page_size, words) =>
       run_make_text(output, title, page_size, words)
   }

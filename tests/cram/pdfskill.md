@@ -17,8 +17,8 @@ pandoc tests/cram/fixtures/pandoc-report.md \
 
 The smaller `active-action.pdf` is hand-authored so the active-content risk
 case has tiny, stable object offsets. `metadata-info.pdf`, `embedded-file.pdf`,
-and `link-action.pdf` are also hand-authored so Info/XMP metadata, attachment,
-and link examples stay stable.
+`link-action.pdf`, and `form-fields.pdf` are also hand-authored so Info/XMP
+metadata, attachment, link, and AcroForm examples stay stable.
 
 ## CLI Help
 
@@ -41,6 +41,7 @@ Commands:
   text         Best-effort text extraction from decoded content streams.
   attachments  List and optionally extract embedded file attachments.
   links        Extract URI action targets from PDF objects.
+  forms        Extract AcroForm/XFA field signals from PDF objects.
   make-text    Create a simple one-page text PDF.
 
 Options:
@@ -182,6 +183,21 @@ Options:
   -h, --help       Show help information.
   --json           write compact JSON instead of Markdown
   --limit <limit>  maximum links to print [default: 40]
+```
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/pdfskill -- forms --help
+Usage: pdfskill forms [options] <input>
+
+Extract AcroForm/XFA field signals from PDF objects.
+
+Arguments:
+  input  input PDF path
+
+Options:
+  -h, --help       Show help information.
+  --json           write compact JSON instead of Markdown
+  --limit <limit>  maximum fields to print [default: 40]
 ```
 
 ```mooncram
@@ -483,6 +499,33 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/link-action.pdf"; moon -C 
 {"links":[{"note":"uri-action","object":4,"target":"https://example.com/docs?portable=wasm"}],"limit":40,"listed":1,"path":"tests/cram/fixtures/link-action.pdf"}
 ```
 
+## Form Fields
+
+`forms` extracts AcroForm/XFA signals from dictionaries and widget annotations
+without rendering the PDF. It is a triage view for deciding whether a file needs
+a full PDF forms parser.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/form-fields.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- forms "$fixture"
+# PDF Forms
+
+- path: `tests/cram/fixtures/form-fields.pdf`
+- acroform objects: 1
+- xfa objects: 0
+- fields found: 1
+- listed: 1
+- limit: 40
+
+| object | field type | name | value | flags | kids | note |
+|---:|---|---|---|---:|---|---|
+| 4 | text (/Tx) | email | agent@example.com | 0 | - | field,widget |
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/form-fields.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- forms --json "$fixture"
+{"acroform_objects":1,"fields":[{"field_type":"text (/Tx)","flags":"0","kids":"-","name":"email","note":"field,widget","object":4,"value":"agent@example.com"}],"fields_found":1,"limit":40,"listed":1,"path":"tests/cram/fixtures/form-fields.pdf","xfa_objects":0}
+```
+
 ## Embedded Attachments
 
 `attachments` finds `/Filespec` objects with `/EF` embedded-file references and
@@ -609,4 +652,20 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/metadata-info.pdf"; (cd "$
 ## Text
 
 Metadata fixture
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/form-fields.pdf"; (cd "$root" && moonrun skills/portable-pdf/assets/pdfskill.wasm forms "$fixture")
+# PDF Forms
+
+- path: `tests/cram/fixtures/form-fields.pdf`
+- acroform objects: 1
+- xfa objects: 0
+- fields found: 1
+- listed: 1
+- limit: 40
+
+| object | field type | name | value | flags | kids | note |
+|---:|---|---|---|---:|---|---|
+| 4 | text (/Tx) | email | agent@example.com | 0 | - | field,widget |
 ```

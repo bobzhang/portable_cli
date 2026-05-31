@@ -1,0 +1,24 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm 5 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 1 /Kids [3 0 R] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Annots [4 0 R] >>
+endobj
+4 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Tx /T (email) /V (agent@example.com) /Ff 0 /Rect [72 120 250 140] >>
+endobj
+5 0 obj
+<< /Fields [4 0 R] /NeedAppearances true >>
+endobj
+xref
+0 6
+0000000000 65535 f
+trailer
+<< /Root 1 0 R /Size 6 >>
+startxref
+0
+%%EOF
