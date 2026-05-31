@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable Markdown"
+  short_description: "Inspect Markdown outlines, links, tasks, code fences, and issues with moonrun"
+  default_prompt: "Use $portable-markdown to inspect Markdown structure with the bundled portable Wasm artifact."

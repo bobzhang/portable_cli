@@ -15,6 +15,7 @@ printf '<section><p>File <em>input</em></p></section>\n' > "$tmp/input.html"
 printf 'MoonBit wasm wasm portable CLI\nMoonBit CLI\n' > "$tmp/input.txt"
 printf '{"items":[{"name":"moon"},{"name":"wasm"}],"ok":true}\n' > "$tmp/data.json"
 printf 'id,name,score\n1,Ada,9.5\n2,Bob,7\n' > "$tmp/data.csv"
+printf '%s\n' '---' 'title: Smoke' '---' '' '# Smoke' '' 'See [MoonBit](https://www.moonbitlang.com) and [empty]().' '' '- [ ] todo' '- [x] done' '' '```moonbit' 'fn main {}' '```' > "$tmp/note.md"
 printf '%s\n' 'diff --git a/a.txt b/a.txt' '--- a/a.txt' '+++ b/a.txt' '@@ -1 +1 @@' '-old' '+new' > "$tmp/change.diff"
 printf 'OPENAI_API_KEY=sk-test-abcdefghijklmnopqrstuvwxyz1234567890\n' > "$tmp/secrets.env"
 printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Catalog /Pages 2 0 R /OpenAction 3 0 R >>' 'endobj' '2 0 obj' '<< /Type /Pages /Count 1 /Kids [3 0 R] >>' 'endobj' '3 0 obj' '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>' 'endobj' 'xref' '0 4' '0000000000 65535 f' 'trailer' '<< /Root 1 0 R /Size 4 >>' 'startxref' '187' '%%EOF' > "$tmp/input.pdf"
@@ -58,6 +59,13 @@ grep 'true' "$tmp/ok.json" >/dev/null
 moonrun skills/portable-jqlet/assets/jqlet.wasm --file "$tmp/data.json" --get 'items[0].name' --raw >/tmp/portable-cli-jqlet-skill.out
 grep 'moon' /tmp/portable-cli-jqlet-skill.out >/dev/null
 
+moon run --target wasm cmd/mdskill -- --file "$tmp/note.md" --section outline >/tmp/portable-cli-mdskill.out
+grep '# Smoke' /tmp/portable-cli-mdskill.out >/dev/null
+moon run --target wasm cmd/mdskill -- --file "$tmp/note.md" --json >/tmp/portable-cli-mdskill-json.out
+grep '"links"' /tmp/portable-cli-mdskill-json.out >/dev/null
+moonrun skills/portable-markdown/assets/mdskill.wasm --file "$tmp/note.md" --section tasks >/tmp/portable-cli-mdskill-skill.out
+grep 'done' /tmp/portable-cli-mdskill-skill.out >/dev/null
+
 moon run --target wasm cmd/pdfskill -- doctor "$tmp/input.pdf" >/tmp/portable-cli-pdfskill.out
 grep 'info risk: active-content' /tmp/portable-cli-pdfskill.out >/dev/null
 moon run --target wasm cmd/pdfskill -- pages "$tmp/form.pdf" >/tmp/portable-cli-pdfskill-pages.out
@@ -91,7 +99,7 @@ grep 'wasm' /tmp/portable-cli-pulse.out >/dev/null
 moonrun skills/portable-pulse/assets/pulse.wasm --file "$tmp/input.txt" --top 2 --width 8 >/tmp/portable-cli-pulse-skill.out
 grep 'wasm' /tmp/portable-cli-pulse-skill.out >/dev/null
 
-moon build --target wasm cmd/cow cmd/datascout cmd/diffskill cmd/htmlfmt cmd/jqlet cmd/pdfskill cmd/repopack cmd/secretscan cmd/tree cmd/pulse
+moon build --target wasm cmd/cow cmd/datascout cmd/diffskill cmd/htmlfmt cmd/jqlet cmd/mdskill cmd/pdfskill cmd/repopack cmd/secretscan cmd/tree cmd/pulse
 
 if command -v wasmtime >/dev/null 2>&1; then
   moonbit_runtime="wasm/moonbit-sys-unstable.wat"
@@ -100,6 +108,7 @@ if command -v wasmtime >/dev/null 2>&1; then
   diffskill_wasm=$(find _build/wasm/debug/build -path '*cmd/diffskill/*.wasm' | head -n 1)
   htmlfmt_wasm=$(find _build/wasm/debug/build -path '*cmd/htmlfmt/*.wasm' | head -n 1)
   jqlet_wasm=$(find _build/wasm/debug/build -path '*cmd/jqlet/*.wasm' | head -n 1)
+  mdskill_wasm=$(find _build/wasm/debug/build -path '*cmd/mdskill/*.wasm' | head -n 1)
   pdfskill_wasm=$(find _build/wasm/debug/build -path '*cmd/pdfskill/*.wasm' | head -n 1)
   repopack_wasm=$(find _build/wasm/debug/build -path '*cmd/repopack/*.wasm' | head -n 1)
   secretscan_wasm=$(find _build/wasm/debug/build -path '*cmd/secretscan/*.wasm' | head -n 1)
@@ -132,6 +141,11 @@ if command -v wasmtime >/dev/null 2>&1; then
   grep 'wasm' /tmp/portable-cli-jqlet-wasmtime.out >/dev/null
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$jqlet_wasm" --file "$tmp/data.json" --get ok --compact --output "$tmp/ok-wasmtime.json"
   grep 'true' "$tmp/ok-wasmtime.json" >/dev/null
+
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$mdskill_wasm" --file "$tmp/note.md" --section outline >/tmp/portable-cli-mdskill-wasmtime.out
+  grep '# Smoke' /tmp/portable-cli-mdskill-wasmtime.out >/dev/null
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$mdskill_wasm" --file "$tmp/note.md" --json >/tmp/portable-cli-mdskill-json-wasmtime.out
+  grep '"links"' /tmp/portable-cli-mdskill-json-wasmtime.out >/dev/null
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" doctor "$tmp/input.pdf" >/tmp/portable-cli-pdfskill-wasmtime.out
   grep 'info risk: active-content' /tmp/portable-cli-pdfskill-wasmtime.out >/dev/null

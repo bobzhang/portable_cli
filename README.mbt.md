@@ -18,6 +18,9 @@ declarative CLI parsing.
   `--inspect`, `--text`, `--markdown`, `--select`, and `--output`.
 - `cmd/jqlet`: JSON formatter and simple path extractor. It reads stdin or
   `--file`, supports `--get`, `--raw`, `--compact`, `--indent`, and `--output`.
+- `cmd/mdskill`: Markdown structure inspector. It summarizes front matter,
+  headings, links, task list items, code fences, and structural issues as
+  Markdown or JSON.
 - `cmd/pdfskill`: portable PDF tooling built on small `bobzhang/pdflite`
   packages. It reports structure/risk signals, maps pages, inspects objects and
   streams, inventories images and actions, extracts lightweight metadata, text,
@@ -45,6 +48,7 @@ moon run --target wasm cmd/htmlfmt -- --inspect --document --file page.html
 moon run --target wasm cmd/htmlfmt -- --markdown --file page.html
 moon run --target wasm cmd/htmlfmt -- --select 'main a[href]' --json --document --file page.html
 printf '{"items":[{"name":"moon"}]}\n' | moon run --target wasm cmd/jqlet -- --get 'items[0].name' --raw
+moon run --target wasm cmd/mdskill -- --section outline --file README.md
 moon run --target wasm cmd/pdfskill -- brief input.pdf
 moon run --target wasm cmd/pdfskill -- make-text -o output.pdf Hello from MoonBit
 moon run --target wasm cmd/repopack -- --redact-secrets --stats --budget-chars 30000 .
@@ -58,7 +62,7 @@ printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
 Build the WASIp1 modules:
 
 ```sh
-moon build --target wasm cmd/cow cmd/datascout cmd/diffskill cmd/htmlfmt cmd/jqlet cmd/pdfskill cmd/repopack cmd/secretscan cmd/tree cmd/pulse
+moon build --target wasm cmd/cow cmd/datascout cmd/diffskill cmd/htmlfmt cmd/jqlet cmd/mdskill cmd/pdfskill cmd/repopack cmd/secretscan cmd/tree cmd/pulse
 ```
 
 Then run a built module with explicit preopened paths:
@@ -110,6 +114,7 @@ moonrun skills/portable-html/assets/htmlfmt.wasm --inspect --document --file pag
 moonrun skills/portable-html/assets/htmlfmt.wasm --markdown --file page.html
 moonrun skills/portable-html/assets/htmlfmt.wasm --select 'main a[href]' --json --document --file page.html
 moonrun skills/portable-jqlet/assets/jqlet.wasm --file data.json --get 'items[0].name' --raw
+moonrun skills/portable-markdown/assets/mdskill.wasm --section outline --file README.md
 moonrun skills/portable-pulse/assets/pulse.wasm --file notes.txt --top 5
 moonrun skills/portable-tree/assets/tree.wasm --depth 2 .
 moonrun skills/portable-pdf/assets/pdfskill.wasm doctor input.pdf

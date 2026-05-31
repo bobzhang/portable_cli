@@ -401,7 +401,7 @@ data.
 
 These are the best next examples after `htmlfmt`. The current `htmlfmt` command
 now covers the first three rows directly with `--text`, `--markdown`, and
-`--select`.
+`--select`; `mdskill` covers the Markdown document-structure slice.
 
 | Skill CLI | Purpose | Key Code |
 | --- | --- | --- |
@@ -409,6 +409,7 @@ now covers the first three rows directly with `--text`, `--markdown`, and
 | `html2md` | HTML to Markdown | HTML parser, Markdown renderer |
 | `htmlselect` | CSS selector extraction | HTML parser, selector engine, output modes |
 | `sanitize-html` | safe HTML cleanup | sanitizer policy, URL handling |
+| `mdskill` | Markdown outline and document inventory | heading/link/task/code-fence scanner, JSON output |
 | `repopack` | compact repo into Markdown | tree walk, ignore rules, file filters |
 | `diffstat` | summarize patches | unified diff parser |
 | `csvstat` | profile CSV files | CSV parser, type inference, stats |
