@@ -1,0 +1,3 @@
+github_token=ghp_example1234567890abcdefghijklmnopqrst
+jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0In0.signature123456
+-----BEGIN PRIVATE KEY-----
