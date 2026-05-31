@@ -71,6 +71,8 @@ grep 'openai-style api key' /tmp/portable-cli-secretscan.out >/dev/null
 
 moon run --target wasm cmd/tree -- --depth 2 "$tmp/src" >/tmp/portable-cli-tree.out
 grep 'nested/' /tmp/portable-cli-tree.out >/dev/null
+moonrun skills/portable-tree/assets/tree.wasm --depth 2 "$tmp/src" >/tmp/portable-cli-tree-skill.out
+grep 'nested/' /tmp/portable-cli-tree-skill.out >/dev/null
 
 moon run --target wasm cmd/pulse -- --file "$tmp/input.txt" --top 3 --width 12 >/tmp/portable-cli-pulse.out
 grep 'wasm' /tmp/portable-cli-pulse.out >/dev/null

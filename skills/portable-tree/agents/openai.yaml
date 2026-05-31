@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable Tree"
+  short_description: "Render directory trees with moonrun"
+  default_prompt: "Use $portable-tree to inspect the local project layout with a compact deterministic directory tree."

@@ -68,3 +68,16 @@ tests/cram/fixtures/tree-demo/
 |-- empty/
 `-- .config/
 ```
+
+## Bundled Skill Artifact
+
+The `portable-tree` skill commits a release Wasm artifact, so agents can render
+directory overviews with `moonrun` and no MoonBit build step.
+
+```mooncram
+$ root="$TESTDIR/../.."; (cd "$root" && moonrun skills/portable-tree/assets/tree.wasm --depth 1 tests/cram/fixtures/tree-demo)
+tests/cram/fixtures/tree-demo/
+|-- code/
+|-- empty/
+`-- README.md
+```
