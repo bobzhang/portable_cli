@@ -11,7 +11,7 @@ Moon's runner may consume flags such as `--help`.
 
 ```mooncram
 $ moon -C "$TESTDIR/../.." run --target wasm cmd/main
-portable_cli commands: cmd/cow, cmd/datascout, cmd/diffskill, cmd/htmlfmt, cmd/jqlet, cmd/mdskill, cmd/pdfskill, cmd/repopack, cmd/secretscan, cmd/tree, cmd/pulse
+portable_cli commands: cmd/cow, cmd/datascout, cmd/diffskill, cmd/htmlfmt, cmd/jqlet, cmd/mdskill, cmd/pdfskill, cmd/repopack, cmd/secretscan, cmd/svgcheck, cmd/tree, cmd/pulse
 ```
 
 ## Command Pages
@@ -26,4 +26,5 @@ portable_cli commands: cmd/cow, cmd/datascout, cmd/diffskill, cmd/htmlfmt, cmd/j
 - [pulse.md](pulse.md): text statistics and compact word histograms.
 - [repopack.md](repopack.md): repository context packing and bundled repopack skill usage.
 - [secretscan.md](secretscan.md): redacted secret scanning before sharing context.
+- [svgcheck.md](svgcheck.md): SVG structure and risk signal inspection.
 - [tree.md](tree.md): deterministic directory tree rendering.

@@ -401,7 +401,8 @@ data.
 
 These are the best next examples after `htmlfmt`. The current `htmlfmt` command
 now covers the first three rows directly with `--text`, `--markdown`, and
-`--select`; `mdskill` covers the Markdown document-structure slice.
+`--select`; `mdskill` covers the Markdown document-structure slice; `svgcheck`
+covers the SVG inspection row.
 
 | Skill CLI | Purpose | Key Code |
 | --- | --- | --- |

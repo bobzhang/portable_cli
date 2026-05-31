@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable SVG"
+  short_description: "Inspect SVG structure and risk signals with moonrun"
+  default_prompt: "Use $portable-svg to inspect local SVG files with the bundled portable Wasm artifact."

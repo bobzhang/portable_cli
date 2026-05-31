@@ -1,0 +1,8 @@
+<svg width="120" height="80" viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg" onload="boot()">
+  <rect width="120" height="80" fill="#fff"/>
+  <image href="https://example.com/pixel.png" width="10" height="10"/>
+  <animate attributeName="opacity" from="0" to="1" dur="1s"/>
+  <foreignObject width="40" height="20"><body>HTML</body></foreignObject>
+  <script>alert(1)</script>
+  <text x="8" y="20">Portable SVG</text>
+</svg>
