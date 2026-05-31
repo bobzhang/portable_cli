@@ -25,6 +25,7 @@ Options:
   --hidden                 include hidden entries; default is to skip names starting with .
   --no-default-ignore      disable built-in ignores such as .git, _build, and node_modules
   --all-files              try every readable text file instead of filtering by extension
+  --redact-secrets         redact secret-like values before writing file contents
   -e, --ext <ext>          comma-separated extensions to include, for example mbt,md,json
   --max-files <max-files>  maximum number of files to include [default: 64]
   --max-chars <max-chars>  maximum characters to include per file [default: 8000]
@@ -67,6 +68,56 @@ fn main { println("hi") }
 ~~~~
 ```
 
+## Secret Redaction
+
+`--redact-secrets` keeps the bundle shape useful for an agent while replacing
+secret-like values before file contents are written to Markdown.
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/repopack -- --redact-secrets --ext env,md,txt --max-chars 200 tests/cram/fixtures/secrets-demo
+# Repo Pack
+
+- root: `tests/cram/fixtures/secrets-demo`
+- files: 3
+- max chars per file: 200
+- secret redaction: on
+- redactions: 5
+- extensions: `env,md,txt`
+
+## Included Files
+
+- `tests/cram/fixtures/secrets-demo/README.md` - 44 chars
+- `tests/cram/fixtures/secrets-demo/token.txt` - 160 chars, redactions: 3
+- `tests/cram/fixtures/secrets-demo/config.env` - 139 chars, redactions: 2
+
+## File Contents
+
+### `tests/cram/fixtures/secrets-demo/README.md`
+
+~~~~markdown
+# Demo
+
+This file has no secret-like value.
+~~~~
+
+### `tests/cram/fixtures/secrets-demo/token.txt`
+
+~~~~text
+github_token=[REDACTED:github-token]
+jwt=[REDACTED:secret]
+-----BEGIN [REDACTED PRIVATE KEY]-----
+~~~~
+
+### `tests/cram/fixtures/secrets-demo/config.env`
+
+~~~~text
+APP_ENV=development
+OPENAI_API_KEY=[REDACTED:api-key]
+AWS_ACCESS_KEY_ID=[REDACTED:aws-access-key]
+PASSWORD=not-secret
+~~~~
+```
+
 ## Bundled Skill Artifact
 
 The `portable-repopack` skill commits a release Wasm artifact, so an agent can
@@ -99,5 +150,52 @@ Hello MoonBit.
 
 ~~~~text
 fn main { println("hi") }
+~~~~
+```
+
+The bundled artifact supports the same redaction mode.
+
+```mooncram
+$ root="$TESTDIR/../.."; (cd "$root" && moonrun skills/portable-repopack/assets/repopack.wasm --redact-secrets --ext env,md,txt --max-files 3 --max-chars 200 tests/cram/fixtures/secrets-demo)
+# Repo Pack
+
+- root: `tests/cram/fixtures/secrets-demo`
+- files: 3
+- max chars per file: 200
+- secret redaction: on
+- redactions: 5
+- extensions: `env,md,txt`
+
+## Included Files
+
+- `tests/cram/fixtures/secrets-demo/README.md` - 44 chars
+- `tests/cram/fixtures/secrets-demo/token.txt` - 160 chars, redactions: 3
+- `tests/cram/fixtures/secrets-demo/config.env` - 139 chars, redactions: 2
+
+## File Contents
+
+### `tests/cram/fixtures/secrets-demo/README.md`
+
+~~~~markdown
+# Demo
+
+This file has no secret-like value.
+~~~~
+
+### `tests/cram/fixtures/secrets-demo/token.txt`
+
+~~~~text
+github_token=[REDACTED:github-token]
+jwt=[REDACTED:secret]
+-----BEGIN [REDACTED PRIVATE KEY]-----
+~~~~
+
+### `tests/cram/fixtures/secrets-demo/config.env`
+
+~~~~text
+APP_ENV=development
+OPENAI_API_KEY=[REDACTED:api-key]
+AWS_ACCESS_KEY_ID=[REDACTED:aws-access-key]
+PASSWORD=not-secret
 ~~~~
 ```

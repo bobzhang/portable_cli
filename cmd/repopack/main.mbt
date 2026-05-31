@@ -11,6 +11,7 @@ struct PackOptions {
   include_hidden : Bool
   default_ignore : Bool
   all_files : Bool
+  redact_secrets : Bool
   exts : Array[String]
   max_files : Int
   max_chars : Int
@@ -22,6 +23,7 @@ struct PackedFile {
   path : String
   chars : Int
   truncated : Bool
+  redactions : Int
   content : String
 }
 
@@ -55,6 +57,11 @@ fn command() -> @argparse.Command {
         "all-files",
         long="all-files",
         about="try every readable text file instead of filtering by extension",
+      ),
+      @argparse.FlagArg(
+        "redact-secrets",
+        long="redact-secrets",
+        about="redact secret-like values before writing file contents",
       ),
     ],
     options=[
@@ -278,6 +285,227 @@ fn take_chars(text : String, limit : Int) -> String {
 }
 
 ///|
+fn is_ascii_letter(ch : Char) -> Bool {
+  match ch {
+    'a'..='z' | 'A'..='Z' => true
+    _ => false
+  }
+}
+
+///|
+fn is_ascii_digit(ch : Char) -> Bool {
+  match ch {
+    '0'..='9' => true
+    _ => false
+  }
+}
+
+///|
+fn is_secret_token_char(ch : Char) -> Bool {
+  if is_ascii_letter(ch) || is_ascii_digit(ch) {
+    true
+  } else {
+    match ch {
+      '_' | '-' | '.' | '/' | '+' | '=' => true
+      _ => false
+    }
+  }
+}
+
+///|
+fn secret_token_prefix(text : String) -> String {
+  let out = StringBuilder()
+  for ch in text {
+    if is_secret_token_char(ch) {
+      out.write_char(ch)
+    } else {
+      break
+    }
+  }
+  out.to_string()
+}
+
+///|
+fn secret_keyword(key : String) -> Bool {
+  key.contains("secret") ||
+  key.contains("token") ||
+  key.contains("api_key") ||
+  key.contains("apikey") ||
+  key.contains("password") ||
+  key.contains("passwd") ||
+  key.contains("private_key") ||
+  key.contains("client_secret") ||
+  key.contains("access_key") ||
+  key.contains("authorization") ||
+  key.contains("credential") ||
+  key == "jwt"
+}
+
+///|
+fn looks_placeholder(value : String) -> Bool {
+  let lower = value.to_lower()
+  lower.contains("changeme") ||
+  lower.contains("placeholder") ||
+  lower.contains("redacted") ||
+  lower.contains("your_") ||
+  lower.contains("your-") ||
+  lower == "todo" ||
+  lower == "none" ||
+  lower == "null"
+}
+
+///|
+fn secret_char_classes(value : String) -> Int {
+  let mut letters = false
+  let mut digits = false
+  let mut symbols = false
+  for ch in value {
+    if is_ascii_letter(ch) {
+      letters = true
+    } else if is_ascii_digit(ch) {
+      digits = true
+    } else if is_secret_token_char(ch) {
+      symbols = true
+    }
+  }
+  let mut count = 0
+  if letters {
+    count += 1
+  }
+  if digits {
+    count += 1
+  }
+  if symbols {
+    count += 1
+  }
+  count
+}
+
+///|
+fn looks_secret_value(value : String) -> Bool {
+  let trimmed = value.trim().to_owned()
+  trimmed.char_length() >= 12 &&
+  !looks_placeholder(trimmed) &&
+  secret_char_classes(trimmed) >= 2
+}
+
+///|
+fn find_assignment_delim(line : String) -> Int {
+  let mut index = 0
+  while index < line.length() {
+    match line.get_char(index) {
+      Some('=') | Some(':') => return index
+      _ => ()
+    }
+    index += 1
+  }
+  -1
+}
+
+///|
+fn redact_prefixed_token(
+  text : String,
+  prefix : String,
+  min_length : Int,
+  label : String,
+) -> (String, Int) {
+  let out = StringBuilder()
+  let mut count = 0
+  let mut first = true
+  for part in text.split(prefix) {
+    let part_text = part.to_owned()
+    if first {
+      out.write_string(part_text)
+      first = false
+    } else {
+      let token_tail = secret_token_prefix(part_text)
+      if prefix.char_length() + token_tail.char_length() >= min_length {
+        out.write_string("[REDACTED:\{label}]")
+        out.write_string(part_text[token_tail.length():].to_owned())
+        count += 1
+      } else {
+        out.write_string(prefix)
+        out.write_string(part_text)
+      }
+    }
+  }
+  (out.to_string(), count)
+}
+
+///|
+fn redact_prefixes(line : String) -> (String, Int) {
+  let mut text = line
+  let mut total = 0
+  for
+    rule in [
+      ("github_pat_", 32, "github-token"),
+      ("ghp_", 24, "github-token"),
+      ("gho_", 24, "github-token"),
+      ("ghu_", 24, "github-token"),
+      ("ghs_", 24, "github-token"),
+      ("ghr_", 24, "github-token"),
+      ("sk-", 24, "api-key"),
+      ("xoxb-", 24, "slack-token"),
+      ("xoxp-", 24, "slack-token"),
+      ("xoxa-", 24, "slack-token"),
+      ("xoxr-", 24, "slack-token"),
+      ("AKIA", 20, "aws-access-key"),
+      ("ASIA", 20, "aws-access-key"),
+    ] {
+    let (prefix, min_length, label) = rule
+    let (next, count) = redact_prefixed_token(text, prefix, min_length, label)
+    text = next
+    total += count
+  }
+  (text, total)
+}
+
+///|
+fn redact_assignment(line : String) -> (String, Int) {
+  let split = find_assignment_delim(line)
+  if split < 0 || split + 1 >= line.length() {
+    return (line, 0)
+  }
+  let key = line[:split].to_owned()
+  let value = line[split + 1:].to_owned()
+  if secret_keyword(key.to_lower().trim().to_owned()) &&
+    looks_secret_value(value) {
+    ("\{key}=[REDACTED:secret]", 1)
+  } else {
+    (line, 0)
+  }
+}
+
+///|
+fn redact_secret_line(line : String) -> (String, Int) {
+  let trimmed = line.trim().to_owned()
+  if trimmed.contains("-----BEGIN ") && trimmed.contains(" PRIVATE KEY-----") {
+    return ("-----BEGIN [REDACTED PRIVATE KEY]-----", 1)
+  }
+  let (prefixed, prefix_count) = redact_prefixes(line)
+  let (assigned, assignment_count) = redact_assignment(prefixed)
+  (assigned, prefix_count + assignment_count)
+}
+
+///|
+fn redact_secrets(text : String) -> (String, Int) {
+  let out = StringBuilder()
+  let mut total = 0
+  let mut first = true
+  for line in text.split("\n") {
+    if first {
+      first = false
+    } else {
+      out.write_string("\n")
+    }
+    let (redacted, count) = redact_secret_line(line.to_owned())
+    out.write_string(redacted)
+    total += count
+  }
+  (out.to_string(), total)
+}
+
+///|
 fn pack_file(
   path : String,
   options : PackOptions,
@@ -294,7 +522,18 @@ fn pack_file(
   } else {
     text
   }
-  files.push(PackedFile::{ path, chars, truncated, content })
+  let (safe_content, redactions) = if options.redact_secrets {
+    redact_secrets(content)
+  } else {
+    (content, 0)
+  }
+  files.push(PackedFile::{
+    path,
+    chars,
+    truncated,
+    redactions,
+    content: safe_content,
+  })
 }
 
 ///|
@@ -361,6 +600,14 @@ fn render_markdown(files : Array[PackedFile], options : PackOptions) -> String {
   out.write_string("- root: `\{options.root}`\n")
   out.write_string("- files: \{files.length()}\n")
   out.write_string("- max chars per file: \{options.max_chars}\n")
+  if options.redact_secrets {
+    let mut redactions = 0
+    for file in files {
+      redactions += file.redactions
+    }
+    out.write_string("- secret redaction: on\n")
+    out.write_string("- redactions: \{redactions}\n")
+  }
   if !options.exts.is_empty() {
     out.write_string("- extensions: `\{options.exts.join(",")}`\n")
   }
@@ -370,7 +617,14 @@ fn render_markdown(files : Array[PackedFile], options : PackOptions) -> String {
   } else {
     for file in files {
       let suffix = if file.truncated { " (truncated)" } else { "" }
-      out.write_string("- `\{file.path}` - \{file.chars} chars\{suffix}\n")
+      let redact_suffix = if options.redact_secrets && file.redactions > 0 {
+        ", redactions: \{file.redactions}"
+      } else {
+        ""
+      }
+      out.write_string(
+        "- `\{file.path}` - \{file.chars} chars\{suffix}\{redact_suffix}\n",
+      )
     }
   }
   out.write_string("\n## File Contents\n")
@@ -396,6 +650,7 @@ fn options_from_matches(matches : @argparse.Matches) -> PackOptions {
     include_hidden: flag(matches, "hidden"),
     default_ignore: !flag(matches, "no-default-ignore"),
     all_files: flag(matches, "all-files"),
+    redact_secrets: flag(matches, "redact-secrets"),
     exts: parse_exts(option(matches, "ext")),
     max_files: int_value(matches, "max-files", 64).clamp(min=1, max=1000),
     max_chars: int_value(matches, "max-chars", 8000).clamp(min=0, max=200000),

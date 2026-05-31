@@ -33,6 +33,8 @@ grep 'info risk: active-content' /tmp/portable-cli-pdfskill.out >/dev/null
 
 moon run --target wasm cmd/repopack -- --max-files 8 --max-chars 80 --output "$tmp/repo.md" "$tmp"
 grep 'Portable repo pack' "$tmp/repo.md" >/dev/null
+moon run --target wasm cmd/repopack -- --redact-secrets --ext env,md,txt --max-files 8 --max-chars 120 --output "$tmp/repo-redacted.md" "$tmp"
+grep -F '[REDACTED:api-key]' "$tmp/repo-redacted.md" >/dev/null
 
 moon run --target wasm cmd/secretscan -- "$tmp" >/tmp/portable-cli-secretscan.out
 grep 'openai-style api key' /tmp/portable-cli-secretscan.out >/dev/null
@@ -72,6 +74,8 @@ if command -v wasmtime >/dev/null 2>&1; then
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$repopack_wasm" --max-files 8 --max-chars 80 --output "$tmp/repo-wasmtime.md" "$tmp"
   grep 'Portable repo pack' "$tmp/repo-wasmtime.md" >/dev/null
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$repopack_wasm" --redact-secrets --ext env,md,txt --max-files 8 --max-chars 120 --output "$tmp/repo-redacted-wasmtime.md" "$tmp"
+  grep -F '[REDACTED:api-key]' "$tmp/repo-redacted-wasmtime.md" >/dev/null
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$secretscan_wasm" "$tmp" >/tmp/portable-cli-secretscan-wasmtime.out
   grep 'openai-style api key' /tmp/portable-cli-secretscan-wasmtime.out >/dev/null
