@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable Datascout"
+  short_description: "Profile CSV/TSV data with moonrun"
+  default_prompt: "Use $portable-datascout to inspect a local data file and produce a compact schema/sample report."
