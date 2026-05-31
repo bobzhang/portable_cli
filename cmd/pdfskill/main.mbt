@@ -94,6 +94,13 @@ struct PdfAttachmentSummary {
 }
 
 ///|
+struct PdfLinkSummary {
+  object_number : Int
+  target : String
+  note : String
+}
+
+///|
 enum PdfSkillCommand {
   Brief(String, Bool, String?)
   Doctor(String)
@@ -103,6 +110,7 @@ enum PdfSkillCommand {
   Metadata(String, Int, Bool)
   Text(String, Int, Bool)
   Attachments(String, Int, String?, Bool)
+  Links(String, Int, Bool)
   MakeText(String?, String, String, Array[String])
 }
 
@@ -332,6 +340,32 @@ fn command() -> @argparse.Command {
         ],
       ),
       @argparse.Command(
+        "links",
+        about="Extract URI action targets from PDF objects.",
+        flags=[
+          @argparse.FlagArg(
+            "json",
+            long="json",
+            about="write compact JSON instead of Markdown",
+          ),
+        ],
+        options=[
+          @argparse.OptionArg(
+            "limit",
+            long="limit",
+            about="maximum links to print",
+            default_values=["40"],
+          ),
+        ],
+        positionals=[
+          @argparse.PositionArg(
+            "input",
+            about="input PDF path",
+            num_args=@argparse.ValueRange::single(),
+          ),
+        ],
+      ),
+      @argparse.Command(
         "make-text",
         about="Create a simple one-page text PDF.",
         options=[
@@ -417,6 +451,12 @@ fn parse() -> PdfSkillCommand {
         required_value(sub, "input"),
         int_value(sub, "limit", 40),
         option(sub, "extract-dir"),
+        flag(sub, "json"),
+      )
+    Some(("links", sub)) =>
+      Links(
+        required_value(sub, "input"),
+        int_value(sub, "limit", 40),
         flag(sub, "json"),
       )
     Some(("make-text", sub)) =>
@@ -2191,6 +2231,7 @@ fn main {
     Text(input, max_chars, as_json) => run_text(input, max_chars, as_json)
     Attachments(input, limit, extract_dir, as_json) =>
       run_attachments(input, limit, extract_dir, as_json)
+    Links(input, limit, as_json) => run_links(input, limit, as_json)
     MakeText(output, title, page_size, words) =>
       run_make_text(output, title, page_size, words)
   }

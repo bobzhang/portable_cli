@@ -16,9 +16,9 @@ pandoc tests/cram/fixtures/pandoc-report.md \
 ```
 
 The smaller `active-action.pdf` is hand-authored so the active-content risk
-case has tiny, stable object offsets. `metadata-info.pdf` and
-`embedded-file.pdf` are also hand-authored so Info/XMP metadata and attachment
-examples stay stable.
+case has tiny, stable object offsets. `metadata-info.pdf`, `embedded-file.pdf`,
+and `link-action.pdf` are also hand-authored so Info/XMP metadata, attachment,
+and link examples stay stable.
 
 ## CLI Help
 
@@ -40,6 +40,7 @@ Commands:
   metadata     Extract common Info dictionary fields and XMP metadata previews.
   text         Best-effort text extraction from decoded content streams.
   attachments  List and optionally extract embedded file attachments.
+  links        Extract URI action targets from PDF objects.
   make-text    Create a simple one-page text PDF.
 
 Options:
@@ -166,6 +167,21 @@ Options:
   --json                       write compact JSON instead of Markdown
   --limit <limit>              maximum attachments to print [default: 40]
   --extract-dir <extract-dir>  write decoded embedded files into this directory
+```
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/pdfskill -- links --help
+Usage: pdfskill links [options] <input>
+
+Extract URI action targets from PDF objects.
+
+Arguments:
+  input  input PDF path
+
+Options:
+  -h, --help       Show help information.
+  --json           write compact JSON instead of Markdown
+  --limit <limit>  maximum links to print [default: 40]
 ```
 
 ```mooncram
@@ -442,6 +458,29 @@ Metadata fixture
 ```mooncram
 $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/metadata-info.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- text --json --max-chars 20 "$fixture"
 {"extracted_chars":16,"fragments":1,"path":"tests/cram/fixtures/metadata-info.pdf","streams_scanned":1,"text":"Metadata fixture"}
+```
+
+## Link Targets
+
+`links` extracts URI action targets from annotation/action objects without
+rendering the PDF.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/link-action.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- links "$fixture"
+# PDF Links
+
+- path: `tests/cram/fixtures/link-action.pdf`
+- listed: 1
+- limit: 40
+
+| object | target | note |
+|---:|---|---|
+| 4 | https://example.com/docs?portable=wasm | uri-action |
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/link-action.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- links --json "$fixture"
+{"links":[{"note":"uri-action","object":4,"target":"https://example.com/docs?portable=wasm"}],"limit":40,"listed":1,"path":"tests/cram/fixtures/link-action.pdf"}
 ```
 
 ## Embedded Attachments

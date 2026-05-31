@@ -18,6 +18,7 @@ printf 'id,name,score\n1,Ada,9.5\n2,Bob,7\n' > "$tmp/data.csv"
 printf '%s\n' 'diff --git a/a.txt b/a.txt' '--- a/a.txt' '+++ b/a.txt' '@@ -1 +1 @@' '-old' '+new' > "$tmp/change.diff"
 printf 'OPENAI_API_KEY=sk-test-abcdefghijklmnopqrstuvwxyz1234567890\n' > "$tmp/secrets.env"
 printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Catalog /Pages 2 0 R /OpenAction 3 0 R >>' 'endobj' '2 0 obj' '<< /Type /Pages /Count 1 /Kids [3 0 R] >>' 'endobj' '3 0 obj' '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>' 'endobj' 'xref' '0 4' '0000000000 65535 f' 'trailer' '<< /Root 1 0 R /Size 4 >>' 'startxref' '187' '%%EOF' > "$tmp/input.pdf"
+printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Annot /Subtype /Link /A << /S /URI /URI (https://example.com) >> >>' 'endobj' '%%EOF' > "$tmp/link.pdf"
 
 moon run --target wasm cmd/cow -- --width 24 portable wasm cli >/tmp/portable-cli-cow.out
 grep 'portable wasm cli' /tmp/portable-cli-cow.out >/dev/null
@@ -42,6 +43,8 @@ grep 'true' "$tmp/ok.json" >/dev/null
 
 moon run --target wasm cmd/pdfskill -- doctor "$tmp/input.pdf" >/tmp/portable-cli-pdfskill.out
 grep 'info risk: active-content' /tmp/portable-cli-pdfskill.out >/dev/null
+moon run --target wasm cmd/pdfskill -- links "$tmp/link.pdf" >/tmp/portable-cli-pdfskill-links.out
+grep 'https://example.com' /tmp/portable-cli-pdfskill-links.out >/dev/null
 
 moon run --target wasm cmd/repopack -- --max-files 8 --max-chars 80 --output "$tmp/repo.md" "$tmp"
 grep 'Portable repo pack' "$tmp/repo.md" >/dev/null
@@ -97,6 +100,8 @@ if command -v wasmtime >/dev/null 2>&1; then
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" doctor "$tmp/input.pdf" >/tmp/portable-cli-pdfskill-wasmtime.out
   grep 'info risk: active-content' /tmp/portable-cli-pdfskill-wasmtime.out >/dev/null
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" links "$tmp/link.pdf" >/tmp/portable-cli-pdfskill-links-wasmtime.out
+  grep 'https://example.com' /tmp/portable-cli-pdfskill-links-wasmtime.out >/dev/null
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$repopack_wasm" --max-files 8 --max-chars 80 --output "$tmp/repo-wasmtime.md" "$tmp"
   grep 'Portable repo pack' "$tmp/repo-wasmtime.md" >/dev/null

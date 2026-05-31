@@ -1,6 +1,6 @@
 ---
 name: portable-pdf
-description: Use this when a user asks to inspect, triage, map, extract lightweight text/metadata/attachments from, or create a simple PDF portably using moonrun and the bundled pdfskill WASM artifact from this skill.
+description: Use this when a user asks to inspect, triage, map, extract lightweight text/metadata/links/attachments from, or create a simple PDF portably using moonrun and the bundled pdfskill WASM artifact from this skill.
 ---
 
 # Portable PDF
@@ -31,11 +31,12 @@ moonrun /path/to/portable-pdf/assets/pdfskill.wasm objects --limit 80 input.pdf
 moonrun /path/to/portable-pdf/assets/pdfskill.wasm streams --decode --max-bytes 120 input.pdf
 ```
 
-Use `metadata` and `text` for lightweight extraction:
+Use `metadata`, `text`, and `links` for lightweight extraction:
 
 ```sh
 moonrun /path/to/portable-pdf/assets/pdfskill.wasm metadata input.pdf
 moonrun /path/to/portable-pdf/assets/pdfskill.wasm text --max-chars 2000 input.pdf
+moonrun /path/to/portable-pdf/assets/pdfskill.wasm links input.pdf
 ```
 
 Use `attachments` to list or extract embedded files:
@@ -65,8 +66,8 @@ moonrun /path/to/portable-pdf/assets/pdfskill.wasm brief --json -o pdf-brief.jso
    task context.
 3. Use `objects` and `streams` when debugging offsets, filters, or suspicious
    object placement.
-4. Use `metadata`, `text`, and `attachments` for bounded extraction before
-   escalating to a heavier renderer or semantic parser.
+4. Use `metadata`, `text`, `links`, and `attachments` for bounded extraction
+   before escalating to a heavier renderer or semantic parser.
 5. Use `make-text` when an agent needs to emit a minimal PDF without depending
    on host tools.
 6. Treat `risk: active-content`, `risk: encrypted`, and `risk: review` as
