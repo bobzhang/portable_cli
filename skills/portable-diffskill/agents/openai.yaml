@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable Diffskill"
+  short_description: "Summarize unified diffs with moonrun"
+  default_prompt: "Use $portable-diffskill to summarize a local unified diff into review-focused Markdown."

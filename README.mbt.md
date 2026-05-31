@@ -10,6 +10,8 @@ declarative CLI parsing.
   stdin, supports `--width`, `--eyes`, `--tongue`, and `--think`.
 - `cmd/datascout`: CSV/TSV-like data triage. It infers simple column types,
   empty counts, max lengths, and bounded sample rows as Markdown or JSON.
+- `cmd/diffskill`: review-focused unified diff summarizer. It counts changed
+  files, additions, deletions, hunks, risk tags, and review hints.
 - `cmd/htmlfmt`: HTML formatter and inspector backed by
   `bobzhang/html_parser`. It reads stdin, inline HTML, or `--file`, supports
   fragment/document parsing, `--compact`, `--indent`, `--sanitize`, `--strict`,
@@ -37,6 +39,7 @@ declarative CLI parsing.
 ```sh
 moon run --target wasm cmd/cow -- portable wasm cli
 moon run --target wasm cmd/datascout -- --file data.csv --sample 3
+moon run --target wasm cmd/diffskill -- --file change.diff
 moon run --target wasm cmd/htmlfmt -- '<article><p>Hello <b>MoonBit</b></p></article>'
 moon run --target wasm cmd/htmlfmt -- --inspect --document --file page.html
 printf '{"items":[{"name":"moon"}]}\n' | moon run --target wasm cmd/jqlet -- --get 'items[0].name' --raw
@@ -53,7 +56,7 @@ printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
 Build the WASIp1 modules:
 
 ```sh
-moon build --target wasm cmd/cow cmd/datascout cmd/htmlfmt cmd/jqlet cmd/pdfskill cmd/repopack cmd/secretscan cmd/tree cmd/pulse
+moon build --target wasm cmd/cow cmd/datascout cmd/diffskill cmd/htmlfmt cmd/jqlet cmd/pdfskill cmd/repopack cmd/secretscan cmd/tree cmd/pulse
 ```
 
 Then run a built module with explicit preopened paths:
@@ -99,6 +102,7 @@ MoonBit build step:
 moonrun skills/portable-repopack/assets/repopack.wasm --redact-secrets --stats --budget-chars 30000 .
 moonrun skills/portable-secretscan/assets/secretscan.wasm --fail-on high .
 moonrun skills/portable-datascout/assets/datascout.wasm --file data.csv --sample 3
+moonrun skills/portable-diffskill/assets/diffskill.wasm --file change.diff
 moonrun skills/portable-html/assets/htmlfmt.wasm --inspect --document --file page.html
 moonrun skills/portable-pdf/assets/pdfskill.wasm doctor input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm text input.pdf
