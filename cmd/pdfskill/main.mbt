@@ -76,6 +76,26 @@ struct PdfStreamSummary {
 }
 
 ///|
+struct PdfImageSummary {
+  object_number : Int
+  width : String
+  height : String
+  color_space : String
+  bits_per_component : String
+  filters : String
+  raw_bytes : Int
+  decoded_bytes : String
+  note : String
+}
+
+///|
+struct PdfImagesSummary {
+  path : String
+  images_found : Int
+  images : Array[PdfImageSummary]
+}
+
+///|
 struct PdfMetadataSummary {
   path : String
   info_objects : Int
@@ -147,6 +167,7 @@ enum PdfSkillCommand {
   Pages(String, Int, Bool)
   Objects(String, Int, String?, Bool)
   Streams(String, Int, Bool, Int, Bool)
+  Images(String, Int, Bool, Bool)
   Metadata(String, Int, Bool)
   Text(String, Int, Bool)
   Attachments(String, Int, String?, Bool)
@@ -313,6 +334,37 @@ fn command() -> @argparse.Command {
             long="max-bytes",
             about="maximum bytes to include in each preview",
             default_values=["96"],
+          ),
+        ],
+        positionals=[
+          @argparse.PositionArg(
+            "input",
+            about="input PDF path",
+            num_args=@argparse.ValueRange::single(),
+          ),
+        ],
+      ),
+      @argparse.Command(
+        "images",
+        about="List image XObject streams and dimensions.",
+        flags=[
+          @argparse.FlagArg(
+            "json",
+            long="json",
+            about="write compact JSON instead of Markdown",
+          ),
+          @argparse.FlagArg(
+            "decode",
+            long="decode",
+            about="decode supported stream filters to report decoded byte counts",
+          ),
+        ],
+        options=[
+          @argparse.OptionArg(
+            "limit",
+            long="limit",
+            about="maximum images to print",
+            default_values=["40"],
           ),
         ],
         positionals=[
@@ -531,6 +583,13 @@ fn parse() -> PdfSkillCommand {
         int_value(sub, "limit", 20),
         flag(sub, "decode"),
         int_value(sub, "max-bytes", 96),
+        flag(sub, "json"),
+      )
+    Some(("images", sub)) =>
+      Images(
+        required_value(sub, "input"),
+        int_value(sub, "limit", 40),
+        flag(sub, "decode"),
         flag(sub, "json"),
       )
     Some(("metadata", sub)) =>
@@ -2332,6 +2391,8 @@ fn main {
       run_objects(input, limit, contains, as_json)
     Streams(input, limit, decode, max_bytes, as_json) =>
       run_streams(input, limit, decode, max_bytes, as_json)
+    Images(input, limit, decode, as_json) =>
+      run_images(input, limit, decode, as_json)
     Metadata(input, max_bytes, as_json) =>
       run_metadata(input, max_bytes, as_json)
     Text(input, max_chars, as_json) => run_text(input, max_chars, as_json)

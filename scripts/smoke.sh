@@ -20,6 +20,7 @@ printf 'OPENAI_API_KEY=sk-test-abcdefghijklmnopqrstuvwxyz1234567890\n' > "$tmp/s
 printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Catalog /Pages 2 0 R /OpenAction 3 0 R >>' 'endobj' '2 0 obj' '<< /Type /Pages /Count 1 /Kids [3 0 R] >>' 'endobj' '3 0 obj' '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>' 'endobj' 'xref' '0 4' '0000000000 65535 f' 'trailer' '<< /Root 1 0 R /Size 4 >>' 'startxref' '187' '%%EOF' > "$tmp/input.pdf"
 printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Annot /Subtype /Link /A << /S /URI /URI (https://example.com) >> >>' 'endobj' '%%EOF' > "$tmp/link.pdf"
 printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Catalog /Pages 2 0 R /AcroForm 4 0 R >>' 'endobj' '2 0 obj' '<< /Type /Pages /Count 1 /Kids [3 0 R] >>' 'endobj' '3 0 obj' '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Annots [5 0 R] >>' 'endobj' '4 0 obj' '<< /Fields [5 0 R] /NeedAppearances true >>' 'endobj' '5 0 obj' '<< /Type /Annot /Subtype /Widget /FT /Tx /T (email) /V (agent@example.com) /Ff 0 >>' 'endobj' 'xref' '0 6' '0000000000 65535 f' 'trailer' '<< /Root 1 0 R /Size 6 >>' 'startxref' '0' '%%EOF' > "$tmp/form.pdf"
+printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Catalog /Pages 2 0 R >>' 'endobj' '2 0 obj' '<< /Type /Pages /Count 1 /Kids [3 0 R] >>' 'endobj' '3 0 obj' '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 120 120] /Resources << /XObject << /Im1 4 0 R >> >> >>' 'endobj' '4 0 obj' '<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 /Length 1 >>' 'stream' 'A' 'endstream' 'endobj' 'xref' '0 5' '0000000000 65535 f' 'trailer' '<< /Root 1 0 R /Size 5 >>' 'startxref' '0' '%%EOF' > "$tmp/image.pdf"
 
 moon run --target wasm cmd/cow -- --width 24 portable wasm cli >/tmp/portable-cli-cow.out
 grep 'portable wasm cli' /tmp/portable-cli-cow.out >/dev/null
@@ -46,6 +47,8 @@ moon run --target wasm cmd/pdfskill -- doctor "$tmp/input.pdf" >/tmp/portable-cl
 grep 'info risk: active-content' /tmp/portable-cli-pdfskill.out >/dev/null
 moon run --target wasm cmd/pdfskill -- pages "$tmp/form.pdf" >/tmp/portable-cli-pdfskill-pages.out
 grep 'PDF Pages' /tmp/portable-cli-pdfskill-pages.out >/dev/null
+moon run --target wasm cmd/pdfskill -- images "$tmp/image.pdf" >/tmp/portable-cli-pdfskill-images.out
+grep '/DeviceGray' /tmp/portable-cli-pdfskill-images.out >/dev/null
 moon run --target wasm cmd/pdfskill -- links "$tmp/link.pdf" >/tmp/portable-cli-pdfskill-links.out
 grep 'https://example.com' /tmp/portable-cli-pdfskill-links.out >/dev/null
 moon run --target wasm cmd/pdfskill -- forms "$tmp/form.pdf" >/tmp/portable-cli-pdfskill-forms.out
@@ -107,6 +110,8 @@ if command -v wasmtime >/dev/null 2>&1; then
   grep 'info risk: active-content' /tmp/portable-cli-pdfskill-wasmtime.out >/dev/null
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" pages "$tmp/form.pdf" >/tmp/portable-cli-pdfskill-pages-wasmtime.out
   grep 'PDF Pages' /tmp/portable-cli-pdfskill-pages-wasmtime.out >/dev/null
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" images "$tmp/image.pdf" >/tmp/portable-cli-pdfskill-images-wasmtime.out
+  grep '/DeviceGray' /tmp/portable-cli-pdfskill-images-wasmtime.out >/dev/null
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" links "$tmp/link.pdf" >/tmp/portable-cli-pdfskill-links-wasmtime.out
   grep 'https://example.com' /tmp/portable-cli-pdfskill-links-wasmtime.out >/dev/null
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" forms "$tmp/form.pdf" >/tmp/portable-cli-pdfskill-forms-wasmtime.out

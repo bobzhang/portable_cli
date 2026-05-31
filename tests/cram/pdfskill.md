@@ -17,9 +17,9 @@ pandoc tests/cram/fixtures/pandoc-report.md \
 
 The smaller `active-action.pdf` is hand-authored so the active-content risk
 case has tiny, stable object offsets. `metadata-info.pdf`, `embedded-file.pdf`,
-`link-action.pdf`, `form-fields.pdf`, and `page-map.pdf` are also hand-authored
-so Info/XMP metadata, attachment, link, AcroForm, and page-map examples stay
-stable.
+`link-action.pdf`, `form-fields.pdf`, `page-map.pdf`, and `image-xobject.pdf`
+are also hand-authored so Info/XMP metadata, attachment, link, AcroForm,
+page-map, and image examples stay stable.
 
 ## CLI Help
 
@@ -39,6 +39,7 @@ Commands:
   pages        List page dictionaries and their content/annotation references.
   objects      Parse and summarize indirect objects, dictionaries, and streams.
   streams      List PDF streams and optionally decode bounded previews.
+  images       List image XObject streams and dimensions.
   metadata     Extract common Info dictionary fields and XMP metadata previews.
   text         Best-effort text extraction from decoded content streams.
   attachments  List and optionally extract embedded file attachments.
@@ -139,6 +140,22 @@ Options:
   --decode                 decode supported filters before previewing stream bytes
   --limit <limit>          maximum streams to print [default: 20]
   --max-bytes <max-bytes>  maximum bytes to include in each preview [default: 96]
+```
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/pdfskill -- images --help
+Usage: pdfskill images [options] <input>
+
+List image XObject streams and dimensions.
+
+Arguments:
+  input  input PDF path
+
+Options:
+  -h, --help       Show help information.
+  --json           write compact JSON instead of Markdown
+  --decode         decode supported stream filters to report decoded byte counts
+  --limit <limit>  maximum images to print [default: 40]
 ```
 
 ```mooncram
@@ -462,6 +479,32 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/pandoc-report.pdf"; moon -
 {"decode":true,"limit":1,"listed":1,"max_bytes":32,"path":"tests/cram/fixtures/pandoc-report.pdf","streams":[{"decoded_bytes":"3212","decode_status":"ok","filters":"/FlateDecode","generation":0,"length":"973","object":14,"offset":15,"preview":" q 1 0 0 1 72 719.99999 cm 0 g 0","raw_bytes":973,"raw_start":66,"subtype":"-","type":"-"}]}
 ```
 
+## Image Inventory
+
+`images` lists image XObject streams with dimensions and storage details. It
+does not render pixels, but it is enough to spot large or suspicious embedded
+images before escalating to image extraction.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/image-xobject.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- images "$fixture"
+# PDF Images
+
+- path: `tests/cram/fixtures/image-xobject.pdf`
+- images found: 1
+- listed: 1
+- limit: 40
+- decode: false
+
+| object | width | height | color space | bits | filters | raw bytes | decoded bytes | note |
+|---:|---:|---:|---|---:|---|---:|---:|---|
+| 4 | 1 | 1 | /DeviceGray | 8 | - | 1 | - | ok |
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/image-xobject.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- images --json --decode "$fixture"
+{"decode":true,"images":[{"bits_per_component":"8","color_space":"/DeviceGray","decoded_bytes":"1","filters":"-","height":"1","note":"ok,identity","object":4,"raw_bytes":1,"width":"1"}],"images_found":1,"limit":40,"listed":1,"path":"tests/cram/fixtures/image-xobject.pdf"}
+```
+
 ## Metadata Extraction
 
 `metadata` extracts common Info dictionary fields from parsed objects and detects
@@ -695,6 +738,21 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/page-map.pdf"; (cd "$root"
 |---:|---:|---|---:|---|---|---|---|
 | 1 | 3 | 0 0 300 200 | 90 | ref:6 | 1 refs | dict | content,annots |
 | 2 | 4 | 0 0 200 100 | 0 | 2 refs | - | ref:7 | content |
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/image-xobject.pdf"; (cd "$root" && moonrun skills/portable-pdf/assets/pdfskill.wasm images "$fixture")
+# PDF Images
+
+- path: `tests/cram/fixtures/image-xobject.pdf`
+- images found: 1
+- listed: 1
+- limit: 40
+- decode: false
+
+| object | width | height | color space | bits | filters | raw bytes | decoded bytes | note |
+|---:|---:|---:|---|---:|---|---:|---:|---|
+| 4 | 1 | 1 | /DeviceGray | 8 | - | 1 | - | ok |
 ```
 
 ```mooncram
