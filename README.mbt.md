@@ -8,9 +8,10 @@ declarative CLI parsing.
 
 - `cmd/cow`: a cowsay-style filter. It accepts words as arguments or reads
   stdin, supports `--width`, `--eyes`, `--tongue`, and `--think`.
-- `cmd/htmlfmt`: HTML formatter backed by `bobzhang/html_parser`. It reads
-  stdin, inline HTML, or `--file`, supports fragment/document parsing,
-  `--compact`, `--indent`, `--sanitize`, `--strict`, and `--output`.
+- `cmd/htmlfmt`: HTML formatter and inspector backed by
+  `bobzhang/html_parser`. It reads stdin, inline HTML, or `--file`, supports
+  fragment/document parsing, `--compact`, `--indent`, `--sanitize`, `--strict`,
+  `--inspect`, and `--output`.
 - `cmd/jqlet`: JSON formatter and simple path extractor. It reads stdin or
   `--file`, supports `--get`, `--raw`, `--compact`, `--indent`, and `--output`.
 - `cmd/pdfskill`: portable PDF tooling built on small `bobzhang/pdflite`
@@ -34,6 +35,7 @@ declarative CLI parsing.
 ```sh
 moon run --target wasm cmd/cow -- portable wasm cli
 moon run --target wasm cmd/htmlfmt -- '<article><p>Hello <b>MoonBit</b></p></article>'
+moon run --target wasm cmd/htmlfmt -- --inspect --document --file page.html
 printf '{"items":[{"name":"moon"}]}\n' | moon run --target wasm cmd/jqlet -- --get 'items[0].name' --raw
 moon run --target wasm cmd/pdfskill -- brief input.pdf
 moon run --target wasm cmd/pdfskill -- make-text -o output.pdf Hello from MoonBit
@@ -93,6 +95,7 @@ MoonBit build step:
 ```sh
 moonrun skills/portable-repopack/assets/repopack.wasm --redact-secrets --stats --budget-chars 30000 .
 moonrun skills/portable-secretscan/assets/secretscan.wasm --fail-on high .
+moonrun skills/portable-html/assets/htmlfmt.wasm --inspect --document --file page.html
 moonrun skills/portable-pdf/assets/pdfskill.wasm doctor input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm text input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm attachments --extract-dir attachments input.pdf

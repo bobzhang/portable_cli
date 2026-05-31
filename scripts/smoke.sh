@@ -22,6 +22,8 @@ grep 'portable wasm cli' /tmp/portable-cli-cow.out >/dev/null
 
 moon run --target wasm cmd/htmlfmt -- --file "$tmp/input.html" --output "$tmp/formatted.html"
 grep '<p>File <em>input</em></p>' "$tmp/formatted.html" >/dev/null
+moon run --target wasm cmd/htmlfmt -- --inspect --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-inspect.out
+grep 'HTML Inspect' /tmp/portable-cli-htmlfmt-inspect.out >/dev/null
 
 moon run --target wasm cmd/jqlet -- --file "$tmp/data.json" --get 'items[1].name' --raw >/tmp/portable-cli-jqlet.out
 grep 'wasm' /tmp/portable-cli-jqlet.out >/dev/null
@@ -65,6 +67,8 @@ if command -v wasmtime >/dev/null 2>&1; then
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$htmlfmt_wasm" --file "$tmp/input.html" --output "$tmp/formatted-wasmtime.html"
   grep '<p>File <em>input</em></p>' "$tmp/formatted-wasmtime.html" >/dev/null
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$htmlfmt_wasm" --inspect --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-inspect-wasmtime.out
+  grep 'HTML Inspect' /tmp/portable-cli-htmlfmt-inspect-wasmtime.out >/dev/null
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$jqlet_wasm" --file "$tmp/data.json" --get 'items[1].name' --raw >/tmp/portable-cli-jqlet-wasmtime.out
   grep 'wasm' /tmp/portable-cli-jqlet-wasmtime.out >/dev/null

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable HTML"
+  short_description: "Inspect and format HTML with moonrun"
+  default_prompt: "Use $portable-html to inspect or format local HTML with the bundled portable Wasm artifact."

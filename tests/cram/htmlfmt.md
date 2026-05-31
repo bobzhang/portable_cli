@@ -1,9 +1,9 @@
 # Htmlfmt CLI
 
-`cmd/htmlfmt` is a portable HTML formatter backed by `bobzhang/html_parser`.
-These examples run the Wasm target through `moon run --target wasm`, so the
-transcripts document the command line contract and verify the `miniio` WASIp1
-path.
+`cmd/htmlfmt` is a portable HTML formatter and inspector backed by
+`bobzhang/html_parser`. These examples run the Wasm target through
+`moon run --target wasm`, so the transcripts document the command line contract
+and verify the `miniio` WASIp1 path.
 
 The examples use checked HTML fixtures under `tests/cram/fixtures/html`. Use
 `--file` and `--output` when an agent needs to format guest-visible files
@@ -18,7 +18,7 @@ stays in sync with the command implementation.
 $ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --help
 Usage: htmlfmt [options] [html...]
 
-Format HTML with bobzhang/html_parser as a portable WASIp1 CLI.
+Format and inspect HTML with bobzhang/html_parser as a portable WASIp1 CLI.
 
 Arguments:
   html...  HTML fragment words; stdin is used when omitted
@@ -30,9 +30,12 @@ Options:
   -d, --document         parse input as a full HTML document; default is fragment mode
   --sanitize             apply html_parser's default sanitizer before formatting
   --strict               fail on the first parse error
+  --inspect              write an outline, link, metadata, and accessibility report instead of formatted HTML
+  --json                 with --inspect, write compact JSON instead of Markdown
   -f, --file <file>      input file; stdin is used when omitted
-  -o, --output <output>  write formatted HTML to a guest-visible file
+  -o, --output <output>  write formatted HTML or inspection report to a guest-visible file
   -i, --indent <indent>  pretty-print indentation [default: 2]
+  --limit <limit>        maximum headings, links, metadata, and issues to include in reports [default: 40]
 ```
 
 ## Format A Fragment
@@ -45,6 +48,62 @@ $ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --file tests/cram/fi
 <article>
   <p>Hello <b>MoonBit</b></p>
 </article>
+```
+
+## Inspect A Document
+
+`--inspect` writes an agent-readable report for document triage: metadata,
+heading outline, links, images missing alt text, scripts, forms, and basic
+issues.
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --inspect --document --file tests/cram/fixtures/html/report.html
+# HTML Inspect
+
+- root kind: Document
+- elements: 16
+- text chars: 155
+- headings: 2
+- links: 2
+- images: 1
+- images missing alt: 1
+- scripts: 1
+- forms: 1
+
+## Metadata
+
+| key | value |
+|---|---|
+| title | Portable Skills |
+| description | MoonBit Wasm agent tools |
+| og:title | Portable CLI |
+
+## Outline
+
+- # Portable Skills
+- ## Checklist
+
+## Links
+
+| text | href |
+|---|---|
+| MoonCakes | https://mooncakes.io |
+|  | /empty |
+
+## Issues
+
+| severity | message |
+|---|---|
+| medium | link with href has no text: /empty |
+| medium | image missing alt text: chart.png |
+| info | script present: app.js |
+```
+
+The same inspection report can be emitted as compact JSON for automation.
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --inspect --json --document --file tests/cram/fixtures/html/report.html
+{"elements":16,"forms":1,"headings":[{"level":1,"text":"Portable Skills"},{"level":2,"text":"Checklist"}],"images":1,"images_missing_alt":1,"issues":[{"message":"link with href has no text: /empty","severity":"medium"},{"message":"image missing alt text: chart.png","severity":"medium"},{"message":"script present: app.js","severity":"info"}],"links":[{"href":"https://mooncakes.io","text":"MoonCakes"},{"href":"/empty","text":""}],"metadata":[{"key":"title","value":"Portable Skills"},{"key":"description","value":"MoonBit Wasm agent tools"},{"key":"og:title","value":"Portable CLI"}],"root_kind":"Document","scripts":1,"text_chars":155}
 ```
 
 ## Compact Output
@@ -94,4 +153,50 @@ $ root="$TESTDIR/../.."; out=".tmp/moon-cram-htmlfmt-out.html"; rm -f "$root/$ou
 <article>
   <p>Hello <b>MoonBit</b></p>
 </article>
+```
+
+## Bundled Skill Artifact
+
+The `portable-html` skill commits a release Wasm artifact, so an agent can run
+HTML formatting and inspection through `moonrun` without a MoonBit build step.
+
+```mooncram
+$ root="$TESTDIR/../.."; (cd "$root" && moonrun skills/portable-html/assets/htmlfmt.wasm --inspect --document --limit 2 --file tests/cram/fixtures/html/report.html)
+# HTML Inspect
+
+- root kind: Document
+- elements: 16
+- text chars: 155
+- headings: 2
+- links: 2
+- images: 1
+- images missing alt: 1
+- scripts: 1
+- forms: 1
+
+## Metadata
+
+| key | value |
+|---|---|
+| title | Portable Skills |
+| description | MoonBit Wasm agent tools |
+
+## Outline
+
+- # Portable Skills
+- ## Checklist
+
+## Links
+
+| text | href |
+|---|---|
+| MoonCakes | https://mooncakes.io |
+|  | /empty |
+
+## Issues
+
+| severity | message |
+|---|---|
+| medium | link with href has no text: /empty |
+| medium | image missing alt text: chart.png |
 ```
