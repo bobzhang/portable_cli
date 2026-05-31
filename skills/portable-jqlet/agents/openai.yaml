@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable Jqlet"
+  short_description: "Format and extract JSON with moonrun"
+  default_prompt: "Use $portable-jqlet to format local JSON or extract a simple path with the bundled portable Wasm artifact."

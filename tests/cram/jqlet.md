@@ -68,6 +68,16 @@ $ root="$TESTDIR/../.."; out=".tmp/moon-cram-jqlet.json"; rm -f "$root/$out"; mo
 true
 ```
 
+## Bundled Skill Artifact
+
+The `portable-jqlet` skill commits a release Wasm artifact, so agents can run
+the JSON formatter/path extractor with `moonrun` and no MoonBit build step.
+
+```mooncram
+$ root="$TESTDIR/../.."; (cd "$root" && moonrun skills/portable-jqlet/assets/jqlet.wasm --file tests/cram/fixtures/json/items.json --get 'items[1].score' --compact)
+3
+```
+
 ## Argparse Error
 
 Unknown flags fail through the shared `@argparse` error path.

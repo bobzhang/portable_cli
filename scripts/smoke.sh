@@ -43,6 +43,8 @@ moon run --target wasm cmd/jqlet -- --file "$tmp/data.json" --get 'items[1].name
 grep 'wasm' /tmp/portable-cli-jqlet.out >/dev/null
 moon run --target wasm cmd/jqlet -- --file "$tmp/data.json" --get ok --compact --output "$tmp/ok.json"
 grep 'true' "$tmp/ok.json" >/dev/null
+moonrun skills/portable-jqlet/assets/jqlet.wasm --file "$tmp/data.json" --get 'items[0].name' --raw >/tmp/portable-cli-jqlet-skill.out
+grep 'moon' /tmp/portable-cli-jqlet-skill.out >/dev/null
 
 moon run --target wasm cmd/pdfskill -- doctor "$tmp/input.pdf" >/tmp/portable-cli-pdfskill.out
 grep 'info risk: active-content' /tmp/portable-cli-pdfskill.out >/dev/null
