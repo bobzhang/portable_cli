@@ -105,6 +105,7 @@ moonrun skills/portable-datascout/assets/datascout.wasm --file data.csv --sample
 moonrun skills/portable-diffskill/assets/diffskill.wasm --file change.diff
 moonrun skills/portable-html/assets/htmlfmt.wasm --inspect --document --file page.html
 moonrun skills/portable-jqlet/assets/jqlet.wasm --file data.json --get 'items[0].name' --raw
+moonrun skills/portable-pulse/assets/pulse.wasm --file notes.txt --top 5
 moonrun skills/portable-pdf/assets/pdfskill.wasm doctor input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm pages input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm images input.pdf

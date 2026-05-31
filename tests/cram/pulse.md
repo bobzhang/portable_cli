@@ -59,3 +59,20 @@ WASM              1 #####
 moon              1 #####
 wasm              1 #####
 ```
+
+## Bundled Skill Artifact
+
+The `portable-pulse` skill commits a release Wasm artifact, so agents can run
+the text histogram with `moonrun` and no MoonBit build step.
+
+```mooncram
+$ root="$TESTDIR/../.."; (cd "$root" && moonrun skills/portable-pulse/assets/pulse.wasm --file tests/cram/fixtures/text/pulse.txt --top 2 --width 8)
+chars: 33
+lines: 2
+words: 6
+unique: 4
+
+top words:
+moon              3 ########
+cli               1 ##
+```

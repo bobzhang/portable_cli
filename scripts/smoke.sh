@@ -74,6 +74,8 @@ grep 'nested/' /tmp/portable-cli-tree.out >/dev/null
 
 moon run --target wasm cmd/pulse -- --file "$tmp/input.txt" --top 3 --width 12 >/tmp/portable-cli-pulse.out
 grep 'wasm' /tmp/portable-cli-pulse.out >/dev/null
+moonrun skills/portable-pulse/assets/pulse.wasm --file "$tmp/input.txt" --top 2 --width 8 >/tmp/portable-cli-pulse-skill.out
+grep 'wasm' /tmp/portable-cli-pulse-skill.out >/dev/null
 
 moon build --target wasm cmd/cow cmd/datascout cmd/diffskill cmd/htmlfmt cmd/jqlet cmd/pdfskill cmd/repopack cmd/secretscan cmd/tree cmd/pulse
 

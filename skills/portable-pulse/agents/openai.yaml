@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable Pulse"
+  short_description: "Summarize text word frequency with moonrun"
+  default_prompt: "Use $portable-pulse to summarize a local text file with compact word-frequency statistics."
