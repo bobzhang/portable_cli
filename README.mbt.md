@@ -37,7 +37,7 @@ moon run --target wasm cmd/htmlfmt -- '<article><p>Hello <b>MoonBit</b></p></art
 printf '{"items":[{"name":"moon"}]}\n' | moon run --target wasm cmd/jqlet -- --get 'items[0].name' --raw
 moon run --target wasm cmd/pdfskill -- brief input.pdf
 moon run --target wasm cmd/pdfskill -- make-text -o output.pdf Hello from MoonBit
-moon run --target wasm cmd/repopack -- --redact-secrets --max-files 12 --max-chars 2000 .
+moon run --target wasm cmd/repopack -- --redact-secrets --stats --budget-chars 30000 .
 moon run --target wasm cmd/secretscan -- --fail-on high .
 moon run --target wasm cmd/tree -- --depth 2 .
 printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
@@ -91,7 +91,7 @@ release WASM artifacts and run through `moonrun`, so the agent does not need a
 MoonBit build step:
 
 ```sh
-moonrun skills/portable-repopack/assets/repopack.wasm --redact-secrets --max-files 80 --max-chars 8000 .
+moonrun skills/portable-repopack/assets/repopack.wasm --redact-secrets --stats --budget-chars 30000 .
 moonrun skills/portable-secretscan/assets/secretscan.wasm --fail-on high .
 moonrun skills/portable-pdf/assets/pdfskill.wasm doctor input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm text input.pdf

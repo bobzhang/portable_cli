@@ -12,9 +12,11 @@ struct PackOptions {
   default_ignore : Bool
   all_files : Bool
   redact_secrets : Bool
+  stats : Bool
   exts : Array[String]
   max_files : Int
   max_chars : Int
+  budget_chars : Int
   output : String?
 }
 
@@ -23,8 +25,17 @@ struct PackedFile {
   path : String
   chars : Int
   truncated : Bool
+  budget_truncated : Bool
   redactions : Int
   content : String
+}
+
+///|
+struct ExtStat {
+  ext : String
+  mut files : Int
+  mut chars : Int
+  mut redactions : Int
 }
 
 ///|
@@ -63,6 +74,11 @@ fn command() -> @argparse.Command {
         long="redact-secrets",
         about="redact secret-like values before writing file contents",
       ),
+      @argparse.FlagArg(
+        "stats",
+        long="stats",
+        about="include extension summary for included files",
+      ),
     ],
     options=[
       @argparse.OptionArg(
@@ -82,6 +98,12 @@ fn command() -> @argparse.Command {
         long="max-chars",
         about="maximum characters to include per file",
         default_values=["8000"],
+      ),
+      @argparse.OptionArg(
+        "budget-chars",
+        long="budget-chars",
+        about="maximum total file-content characters to include; 0 disables",
+        default_values=["0"],
       ),
       @argparse.OptionArg(
         "output",
@@ -282,6 +304,68 @@ fn take_chars(text : String, limit : Int) -> String {
     count += 1
   }
   out.to_string()
+}
+
+///|
+fn take_content_prefix(text : String, limit : Int) -> String {
+  if text.char_length() <= limit {
+    return text
+  }
+  let out = StringBuilder()
+  let mut used = 0
+  let mut first = true
+  let mut wrote = false
+  for line in text.split("\n") {
+    let line_text = line.to_owned()
+    let prefix = if first { 0 } else { 1 }
+    let next_used = used + prefix + line_text.char_length()
+    if next_used > limit {
+      break
+    }
+    if !first {
+      out.write_string("\n")
+    }
+    out.write_string(line_text)
+    used = next_used
+    first = false
+    wrote = true
+  }
+  if wrote {
+    out.to_string()
+  } else {
+    take_chars(text, limit)
+  }
+}
+
+///|
+fn take_line_budget_prefix(text : String, limit : Int) -> String {
+  if text.char_length() <= limit {
+    return text
+  }
+  let out = StringBuilder()
+  let mut used = 0
+  let mut first = true
+  let mut wrote = false
+  for line in text.split("\n") {
+    let line_text = line.to_owned()
+    let prefix = if first { 0 } else { 1 }
+    let next_used = used + prefix + line_text.char_length()
+    if next_used > limit {
+      break
+    }
+    if !first {
+      out.write_string("\n")
+    }
+    out.write_string(line_text)
+    used = next_used
+    first = false
+    wrote = true
+  }
+  if wrote {
+    out.to_string()
+  } else {
+    ""
+  }
 }
 
 ///|
@@ -506,6 +590,24 @@ fn redact_secrets(text : String) -> (String, Int) {
 }
 
 ///|
+fn included_content_chars(files : Array[PackedFile]) -> Int {
+  let mut total = 0
+  for file in files {
+    total += file.content.char_length()
+  }
+  total
+}
+
+///|
+fn remaining_budget(files : Array[PackedFile], options : PackOptions) -> Int {
+  if options.budget_chars <= 0 {
+    options.max_chars
+  } else {
+    options.budget_chars - included_content_chars(files)
+  }
+}
+
+///|
 fn pack_file(
   path : String,
   options : PackOptions,
@@ -516,23 +618,38 @@ fn pack_file(
   }
   let text = @miniio.read_text_file(path) catch { _ => return }
   let chars = text.char_length()
-  let truncated = chars > options.max_chars
-  let content = if truncated {
-    take_chars(text, options.max_chars)
+  let (safe_text, redactions) = if options.redact_secrets {
+    redact_secrets(text)
   } else {
-    text
+    (text, 0)
   }
-  let (safe_content, redactions) = if options.redact_secrets {
-    redact_secrets(content)
+  let truncated = safe_text.char_length() > options.max_chars
+  let content = if truncated {
+    take_content_prefix(safe_text, options.max_chars)
   } else {
-    (content, 0)
+    safe_text
+  }
+  let remaining = remaining_budget(files, options)
+  if options.budget_chars > 0 && remaining <= 0 {
+    return
+  }
+  let budget_truncated = options.budget_chars > 0 &&
+    content.char_length() > remaining
+  let final_content = if budget_truncated {
+    take_line_budget_prefix(content, remaining)
+  } else {
+    content
+  }
+  if final_content == "" {
+    return
   }
   files.push(PackedFile::{
     path,
     chars,
-    truncated,
+    truncated: truncated || budget_truncated,
+    budget_truncated,
     redactions,
-    content: safe_content,
+    content: final_content,
   })
 }
 
@@ -591,6 +708,70 @@ fn fence_lang(path : String) -> String {
 }
 
 ///|
+fn ext_label(path : String) -> String {
+  let ext = extension(path)
+  if ext == "" {
+    "(none)"
+  } else {
+    "." + ext
+  }
+}
+
+///|
+fn add_ext_stat(stats : Array[ExtStat], file : PackedFile) -> Unit {
+  let ext = ext_label(file.path)
+  for stat in stats {
+    if stat.ext == ext {
+      stat.files += 1
+      stat.chars += file.chars
+      stat.redactions += file.redactions
+      return
+    }
+  }
+  stats.push(ExtStat::{
+    ext,
+    files: 1,
+    chars: file.chars,
+    redactions: file.redactions,
+  })
+}
+
+///|
+fn extension_stats(files : Array[PackedFile]) -> Array[ExtStat] {
+  let stats : Array[ExtStat] = []
+  for file in files {
+    add_ext_stat(stats, file)
+  }
+  stats.sort_by((left, right) => left.ext.compare(right.ext))
+  stats
+}
+
+///|
+fn total_redactions(files : Array[PackedFile]) -> Int {
+  let mut redactions = 0
+  for file in files {
+    redactions += file.redactions
+  }
+  redactions
+}
+
+///|
+fn budget_limited(files : Array[PackedFile], options : PackOptions) -> Bool {
+  if options.budget_chars <= 0 {
+    false
+  } else if included_content_chars(files) >= options.budget_chars {
+    true
+  } else {
+    for file in files {
+      if file.budget_truncated {
+        return true
+      }
+    }
+    false
+  }
+}
+
+///|
 fn render_markdown(files : Array[PackedFile], options : PackOptions) -> String {
   files.sort_by((left, right) => {
     left.path.to_lower().compare(right.path.to_lower())
@@ -600,13 +781,16 @@ fn render_markdown(files : Array[PackedFile], options : PackOptions) -> String {
   out.write_string("- root: `\{options.root}`\n")
   out.write_string("- files: \{files.length()}\n")
   out.write_string("- max chars per file: \{options.max_chars}\n")
+  if options.budget_chars > 0 {
+    out.write_string("- content budget: \{options.budget_chars}\n")
+    out.write_string(
+      "- content chars included: \{included_content_chars(files)}\n",
+    )
+    out.write_string("- budget limited: \{budget_limited(files, options)}\n")
+  }
   if options.redact_secrets {
-    let mut redactions = 0
-    for file in files {
-      redactions += file.redactions
-    }
     out.write_string("- secret redaction: on\n")
-    out.write_string("- redactions: \{redactions}\n")
+    out.write_string("- redactions: \{total_redactions(files)}\n")
   }
   if !options.exts.is_empty() {
     out.write_string("- extensions: `\{options.exts.join(",")}`\n")
@@ -622,8 +806,23 @@ fn render_markdown(files : Array[PackedFile], options : PackOptions) -> String {
       } else {
         ""
       }
+      let budget_suffix = if file.budget_truncated {
+        ", budget-truncated"
+      } else {
+        ""
+      }
       out.write_string(
-        "- `\{file.path}` - \{file.chars} chars\{suffix}\{redact_suffix}\n",
+        "- `\{file.path}` - \{file.chars} chars\{suffix}\{redact_suffix}\{budget_suffix}\n",
+      )
+    }
+  }
+  if options.stats {
+    out.write_string("\n## Extension Summary\n\n")
+    out.write_string("| extension | files | chars | redactions |\n")
+    out.write_string("|---|---:|---:|---:|\n")
+    for stat in extension_stats(files) {
+      out.write_string(
+        "| \{stat.ext} | \{stat.files} | \{stat.chars} | \{stat.redactions} |\n",
       )
     }
   }
@@ -651,9 +850,14 @@ fn options_from_matches(matches : @argparse.Matches) -> PackOptions {
     default_ignore: !flag(matches, "no-default-ignore"),
     all_files: flag(matches, "all-files"),
     redact_secrets: flag(matches, "redact-secrets"),
+    stats: flag(matches, "stats"),
     exts: parse_exts(option(matches, "ext")),
     max_files: int_value(matches, "max-files", 64).clamp(min=1, max=1000),
     max_chars: int_value(matches, "max-chars", 8000).clamp(min=0, max=200000),
+    budget_chars: int_value(matches, "budget-chars", 0).clamp(
+      min=0,
+      max=1000000,
+    ),
     output: option(matches, "output"),
   }
 }

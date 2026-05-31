@@ -16,7 +16,7 @@ Run the bundled WASM artifact with `moonrun` from the project directory:
 
 ```sh
 cd /path/to/project
-moonrun /path/to/portable-repopack/assets/repopack.wasm --redact-secrets --max-files 80 --max-chars 8000 .
+moonrun /path/to/portable-repopack/assets/repopack.wasm --redact-secrets --stats --budget-chars 30000 .
 ```
 
 If changing directories is inconvenient, use the helper wrapper:
@@ -24,7 +24,7 @@ If changing directories is inconvenient, use the helper wrapper:
 ```sh
 skills/portable-repopack/scripts/repopack-moonrun.sh \
   --workdir /path/to/project \
-  -- --redact-secrets --max-files 80 --max-chars 8000 .
+  -- --redact-secrets --stats --budget-chars 30000 .
 ```
 
 Write the bundle to a file inside the selected workdir:
@@ -38,16 +38,17 @@ skills/portable-repopack/scripts/repopack-moonrun.sh \
 ## Workflow
 
 1. Choose the smallest useful `--workdir`.
-2. Use `--max-files` and `--max-chars` to keep output within the task budget.
+2. Use `--budget-chars` to keep included file content within the task budget.
 3. Use `--ext` for focused tasks, for example `--ext mbt,md,json`.
 4. Use `--redact-secrets` before sharing generated context outside the local
    task.
-5. Inspect the Markdown bundle before relying on it for analysis.
-6. Prefer direct `moonrun assets/repopack.wasm`; use `scripts/repopack-moonrun.sh`
+5. Use `--stats` when you want a quick extension/language summary.
+6. Inspect the Markdown bundle before relying on it for analysis.
+7. Prefer direct `moonrun assets/repopack.wasm`; use `scripts/repopack-moonrun.sh`
    only when a `--workdir` helper is useful.
-7. Use `scripts/repopack-wasm.sh` only as a compatibility alias; it delegates to
+8. Use `scripts/repopack-wasm.sh` only as a compatibility alias; it delegates to
    the `moonrun` helper.
-8. If the task requires Git-aware ignores, symlink handling, byte-size limits
+9. If the task requires Git-aware ignores, symlink handling, byte-size limits
    before read, or streaming large files, say that this portable version is not
    a full native repo packer.
 
@@ -55,6 +56,8 @@ skills/portable-repopack/scripts/repopack-moonrun.sh \
 
 - `--max-files N`: cap the number of included files.
 - `--max-chars N`: cap characters per file after reading.
+- `--budget-chars N`: cap total included file-content characters.
+- `--stats`: include an extension summary for included files.
 - `--ext a,b,c`: include only listed extensions.
 - `--hidden`: include hidden entries.
 - `--no-default-ignore`: disable built-in ignores.

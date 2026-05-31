@@ -20,16 +20,18 @@ Arguments:
   path  root file or directory [default: .]
 
 Options:
-  -h, --help               Show help information.
-  -V, --version            Show version information.
-  --hidden                 include hidden entries; default is to skip names starting with .
-  --no-default-ignore      disable built-in ignores such as .git, _build, and node_modules
-  --all-files              try every readable text file instead of filtering by extension
-  --redact-secrets         redact secret-like values before writing file contents
-  -e, --ext <ext>          comma-separated extensions to include, for example mbt,md,json
-  --max-files <max-files>  maximum number of files to include [default: 64]
-  --max-chars <max-chars>  maximum characters to include per file [default: 8000]
-  -o, --output <output>    write Markdown bundle to a guest-visible file
+  -h, --help                     Show help information.
+  -V, --version                  Show version information.
+  --hidden                       include hidden entries; default is to skip names starting with .
+  --no-default-ignore            disable built-in ignores such as .git, _build, and node_modules
+  --all-files                    try every readable text file instead of filtering by extension
+  --redact-secrets               redact secret-like values before writing file contents
+  --stats                        include extension summary for included files
+  -e, --ext <ext>                comma-separated extensions to include, for example mbt,md,json
+  --max-files <max-files>        maximum number of files to include [default: 64]
+  --max-chars <max-chars>        maximum characters to include per file [default: 8000]
+  --budget-chars <budget-chars>  maximum total file-content characters to include; 0 disables [default: 0]
+  -o, --output <output>          write Markdown bundle to a guest-visible file
 ```
 
 ## Markdown Bundle
@@ -50,6 +52,51 @@ $ moon -C "$TESTDIR/../.." run --target wasm cmd/repopack -- --max-chars 40 test
 
 - `tests/cram/fixtures/repopack-demo/README.md` - 23 chars
 - `tests/cram/fixtures/repopack-demo/code/main.txt` - 26 chars
+
+## File Contents
+
+### `tests/cram/fixtures/repopack-demo/README.md`
+
+~~~~markdown
+# Demo
+
+Hello MoonBit.
+~~~~
+
+### `tests/cram/fixtures/repopack-demo/code/main.txt`
+
+~~~~text
+fn main { println("hi") }
+~~~~
+```
+
+## Budget And Stats
+
+`--budget-chars` caps the total file-content characters in the bundle, while
+`--stats` adds a compact extension summary for the included files.
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/repopack -- --stats --budget-chars 60 --max-chars 80 tests/cram/fixtures/repopack-demo
+# Repo Pack
+
+- root: `tests/cram/fixtures/repopack-demo`
+- files: 2
+- max chars per file: 80
+- content budget: 60
+- content chars included: 49
+- budget limited: false
+
+## Included Files
+
+- `tests/cram/fixtures/repopack-demo/README.md` - 23 chars
+- `tests/cram/fixtures/repopack-demo/code/main.txt` - 26 chars
+
+## Extension Summary
+
+| extension | files | chars | redactions |
+|---|---:|---:|---:|
+| .md | 1 | 23 | 0 |
+| .txt | 1 | 26 | 0 |
 
 ## File Contents
 
@@ -115,6 +162,54 @@ APP_ENV=development
 OPENAI_API_KEY=[REDACTED:api-key]
 AWS_ACCESS_KEY_ID=[REDACTED:aws-access-key]
 PASSWORD=not-secret
+~~~~
+```
+
+Redaction and content budgets can be combined. Budget cuts prefer complete
+lines so redaction markers are not split.
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/repopack -- --redact-secrets --stats --budget-chars 90 --ext env,md,txt --max-chars 200 tests/cram/fixtures/secrets-demo
+# Repo Pack
+
+- root: `tests/cram/fixtures/secrets-demo`
+- files: 2
+- max chars per file: 200
+- content budget: 90
+- content chars included: 80
+- budget limited: true
+- secret redaction: on
+- redactions: 3
+- extensions: `env,md,txt`
+
+## Included Files
+
+- `tests/cram/fixtures/secrets-demo/README.md` - 44 chars
+- `tests/cram/fixtures/secrets-demo/token.txt` - 160 chars (truncated), redactions: 3, budget-truncated
+
+## Extension Summary
+
+| extension | files | chars | redactions |
+|---|---:|---:|---:|
+| .md | 1 | 44 | 0 |
+| .txt | 1 | 160 | 3 |
+
+## File Contents
+
+### `tests/cram/fixtures/secrets-demo/README.md`
+
+~~~~markdown
+# Demo
+
+This file has no secret-like value.
+~~~~
+
+### `tests/cram/fixtures/secrets-demo/token.txt`
+
+~~~~text
+github_token=[REDACTED:github-token]
+
+[truncated]
 ~~~~
 ```
 
