@@ -47,6 +47,25 @@ struct PdfObjectSummary {
 }
 
 ///|
+struct PdfPageSummary {
+  page_number : Int
+  object_number : Int
+  media_box : String
+  rotate : String
+  contents : String
+  annots : String
+  resources : String
+  note : String
+}
+
+///|
+struct PdfPagesSummary {
+  path : String
+  pages_found : Int
+  pages : Array[PdfPageSummary]
+}
+
+///|
 struct PdfStreamSummary {
   object : PdfObjectSummary
   raw_start : Int
@@ -125,6 +144,7 @@ enum PdfSkillCommand {
   Brief(String, Bool, String?)
   Doctor(String)
   Map(String, Int)
+  Pages(String, Int, Bool)
   Objects(String, Int, String?, Bool)
   Streams(String, Int, Bool, Int, Bool)
   Metadata(String, Int, Bool)
@@ -199,6 +219,32 @@ fn command() -> @argparse.Command {
             long="limit",
             about="maximum object candidates to print",
             default_values=["40"],
+          ),
+        ],
+        positionals=[
+          @argparse.PositionArg(
+            "input",
+            about="input PDF path",
+            num_args=@argparse.ValueRange::single(),
+          ),
+        ],
+      ),
+      @argparse.Command(
+        "pages",
+        about="List page dictionaries and their content/annotation references.",
+        flags=[
+          @argparse.FlagArg(
+            "json",
+            long="json",
+            about="write compact JSON instead of Markdown",
+          ),
+        ],
+        options=[
+          @argparse.OptionArg(
+            "limit",
+            long="limit",
+            about="maximum pages to print",
+            default_values=["80"],
           ),
         ],
         positionals=[
@@ -466,6 +512,12 @@ fn parse() -> PdfSkillCommand {
     Some(("doctor", sub)) => Doctor(required_value(sub, "input"))
     Some(("map", sub)) =>
       Map(required_value(sub, "input"), int_value(sub, "limit", 40))
+    Some(("pages", sub)) =>
+      Pages(
+        required_value(sub, "input"),
+        int_value(sub, "limit", 80),
+        flag(sub, "json"),
+      )
     Some(("objects", sub)) =>
       Objects(
         required_value(sub, "input"),
@@ -2275,6 +2327,7 @@ fn main {
     Brief(input, as_json, output) => run_brief(input, as_json, output)
     Doctor(input) => run_doctor(input)
     Map(input, limit) => run_map(input, limit)
+    Pages(input, limit, as_json) => run_pages(input, limit, as_json)
     Objects(input, limit, contains, as_json) =>
       run_objects(input, limit, contains, as_json)
     Streams(input, limit, decode, max_bytes, as_json) =>

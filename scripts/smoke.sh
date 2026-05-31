@@ -44,6 +44,8 @@ grep 'true' "$tmp/ok.json" >/dev/null
 
 moon run --target wasm cmd/pdfskill -- doctor "$tmp/input.pdf" >/tmp/portable-cli-pdfskill.out
 grep 'info risk: active-content' /tmp/portable-cli-pdfskill.out >/dev/null
+moon run --target wasm cmd/pdfskill -- pages "$tmp/form.pdf" >/tmp/portable-cli-pdfskill-pages.out
+grep 'PDF Pages' /tmp/portable-cli-pdfskill-pages.out >/dev/null
 moon run --target wasm cmd/pdfskill -- links "$tmp/link.pdf" >/tmp/portable-cli-pdfskill-links.out
 grep 'https://example.com' /tmp/portable-cli-pdfskill-links.out >/dev/null
 moon run --target wasm cmd/pdfskill -- forms "$tmp/form.pdf" >/tmp/portable-cli-pdfskill-forms.out
@@ -103,6 +105,8 @@ if command -v wasmtime >/dev/null 2>&1; then
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" doctor "$tmp/input.pdf" >/tmp/portable-cli-pdfskill-wasmtime.out
   grep 'info risk: active-content' /tmp/portable-cli-pdfskill-wasmtime.out >/dev/null
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" pages "$tmp/form.pdf" >/tmp/portable-cli-pdfskill-pages-wasmtime.out
+  grep 'PDF Pages' /tmp/portable-cli-pdfskill-pages-wasmtime.out >/dev/null
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" links "$tmp/link.pdf" >/tmp/portable-cli-pdfskill-links-wasmtime.out
   grep 'https://example.com' /tmp/portable-cli-pdfskill-links-wasmtime.out >/dev/null
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" forms "$tmp/form.pdf" >/tmp/portable-cli-pdfskill-forms-wasmtime.out

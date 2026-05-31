@@ -17,8 +17,9 @@ pandoc tests/cram/fixtures/pandoc-report.md \
 
 The smaller `active-action.pdf` is hand-authored so the active-content risk
 case has tiny, stable object offsets. `metadata-info.pdf`, `embedded-file.pdf`,
-`link-action.pdf`, and `form-fields.pdf` are also hand-authored so Info/XMP
-metadata, attachment, link, and AcroForm examples stay stable.
+`link-action.pdf`, `form-fields.pdf`, and `page-map.pdf` are also hand-authored
+so Info/XMP metadata, attachment, link, AcroForm, and page-map examples stay
+stable.
 
 ## CLI Help
 
@@ -35,6 +36,7 @@ Commands:
   brief        Write an agent-readable Markdown or JSON triage report.
   doctor       Run quick structural checks and print pass/warn lines.
   map          List indirect object candidates with byte offsets.
+  pages        List page dictionaries and their content/annotation references.
   objects      Parse and summarize indirect objects, dictionaries, and streams.
   streams      List PDF streams and optionally decode bounded previews.
   metadata     Extract common Info dictionary fields and XMP metadata previews.
@@ -89,6 +91,21 @@ Arguments:
 Options:
   -h, --help       Show help information.
   --limit <limit>  maximum object candidates to print [default: 40]
+```
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/pdfskill -- pages --help
+Usage: pdfskill pages [options] <input>
+
+List page dictionaries and their content/annotation references.
+
+Arguments:
+  input  input PDF path
+
+Options:
+  -h, --help       Show help information.
+  --json           write compact JSON instead of Markdown
+  --limit <limit>  maximum pages to print [default: 80]
 ```
 
 ```mooncram
@@ -310,6 +327,32 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/active-action.pdf"; moon -
 | 1 | 0 | 9 |
 | 2 | 0 | 76 |
 | 3 | 0 | 133 |
+```
+
+## Page Map
+
+`pages` lists page dictionaries and their direct page-level references. It gives
+agents a compact way to find content streams, annotations, inherited resources,
+and suspicious page actions before using a renderer.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/page-map.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- pages "$fixture"
+# PDF Pages
+
+- path: `tests/cram/fixtures/page-map.pdf`
+- pages found: 2
+- listed: 2
+- limit: 80
+
+| page | object | media box | rotate | contents | annots | resources | note |
+|---:|---:|---|---:|---|---|---|---|
+| 1 | 3 | 0 0 300 200 | 90 | ref:6 | 1 refs | dict | content,annots |
+| 2 | 4 | 0 0 200 100 | 0 | 2 refs | - | ref:7 | content |
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/page-map.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- pages --json "$fixture"
+{"limit":80,"listed":2,"pages":[{"annots":"1 refs","contents":"ref:6","media_box":"0 0 300 200","note":"content,annots","object":3,"page":1,"resources":"dict","rotate":"90"},{"annots":"-","contents":"2 refs","media_box":"0 0 200 100","note":"content","object":4,"page":2,"resources":"ref:7","rotate":"0"}],"pages_found":2,"path":"tests/cram/fixtures/page-map.pdf"}
 ```
 
 ## Object Inspector
@@ -638,6 +681,21 @@ info risk: active-content
 ```
 
 The bundled artifact includes the richer extraction commands too:
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/page-map.pdf"; (cd "$root" && moonrun skills/portable-pdf/assets/pdfskill.wasm pages "$fixture")
+# PDF Pages
+
+- path: `tests/cram/fixtures/page-map.pdf`
+- pages found: 2
+- listed: 2
+- limit: 80
+
+| page | object | media box | rotate | contents | annots | resources | note |
+|---:|---:|---|---:|---|---|---|---|
+| 1 | 3 | 0 0 300 200 | 90 | ref:6 | 1 refs | dict | content,annots |
+| 2 | 4 | 0 0 200 100 | 0 | 2 refs | - | ref:7 | content |
+```
 
 ```mooncram
 $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/metadata-info.pdf"; (cd "$root" && moonrun skills/portable-pdf/assets/pdfskill.wasm text "$fixture")

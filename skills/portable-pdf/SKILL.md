@@ -24,9 +24,11 @@ Use `doctor` for a compact pass/warn summary:
 moonrun /path/to/portable-pdf/assets/pdfskill.wasm doctor input.pdf
 ```
 
-Use `objects` and `streams` when the question needs structure beyond the brief:
+Use `pages`, `objects`, and `streams` when the question needs structure beyond
+the brief:
 
 ```sh
+moonrun /path/to/portable-pdf/assets/pdfskill.wasm pages input.pdf
 moonrun /path/to/portable-pdf/assets/pdfskill.wasm objects --limit 80 input.pdf
 moonrun /path/to/portable-pdf/assets/pdfskill.wasm streams --decode --max-bytes 120 input.pdf
 ```
@@ -65,8 +67,8 @@ moonrun /path/to/portable-pdf/assets/pdfskill.wasm brief --json -o pdf-brief.jso
    signals.
 2. Use `brief` when the result should be pasted into a conversation or saved as
    task context.
-3. Use `objects` and `streams` when debugging offsets, filters, or suspicious
-   object placement.
+3. Use `pages`, `objects`, and `streams` when debugging page references,
+   offsets, filters, or suspicious object placement.
 4. Use `metadata`, `text`, `links`, `forms`, and `attachments` for bounded
    extraction before escalating to a heavier renderer or semantic parser.
 5. Use `make-text` when an agent needs to emit a minimal PDF without depending
