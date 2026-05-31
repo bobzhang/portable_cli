@@ -40,6 +40,12 @@ moon run --target wasm cmd/htmlfmt -- --file "$tmp/input.html" --output "$tmp/fo
 grep '<p>File <em>input</em></p>' "$tmp/formatted.html" >/dev/null
 moon run --target wasm cmd/htmlfmt -- --inspect --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-inspect.out
 grep 'HTML Inspect' /tmp/portable-cli-htmlfmt-inspect.out >/dev/null
+moon run --target wasm cmd/htmlfmt -- --text --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-text.out
+grep 'File input' /tmp/portable-cli-htmlfmt-text.out >/dev/null
+moon run --target wasm cmd/htmlfmt -- --markdown --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-markdown.out
+grep -F 'File *input*' /tmp/portable-cli-htmlfmt-markdown.out >/dev/null
+moonrun skills/portable-html/assets/htmlfmt.wasm --markdown --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-skill.out
+grep -F 'File *input*' /tmp/portable-cli-htmlfmt-skill.out >/dev/null
 
 moon run --target wasm cmd/jqlet -- --file "$tmp/data.json" --get 'items[1].name' --raw >/tmp/portable-cli-jqlet.out
 grep 'wasm' /tmp/portable-cli-jqlet.out >/dev/null
@@ -111,6 +117,10 @@ if command -v wasmtime >/dev/null 2>&1; then
   grep '<p>File <em>input</em></p>' "$tmp/formatted-wasmtime.html" >/dev/null
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$htmlfmt_wasm" --inspect --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-inspect-wasmtime.out
   grep 'HTML Inspect' /tmp/portable-cli-htmlfmt-inspect-wasmtime.out >/dev/null
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$htmlfmt_wasm" --text --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-text-wasmtime.out
+  grep 'File input' /tmp/portable-cli-htmlfmt-text-wasmtime.out >/dev/null
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$htmlfmt_wasm" --markdown --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-markdown-wasmtime.out
+  grep -F 'File *input*' /tmp/portable-cli-htmlfmt-markdown-wasmtime.out >/dev/null
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$jqlet_wasm" --file "$tmp/data.json" --get 'items[1].name' --raw >/tmp/portable-cli-jqlet-wasmtime.out
   grep 'wasm' /tmp/portable-cli-jqlet-wasmtime.out >/dev/null

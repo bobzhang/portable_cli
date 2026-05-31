@@ -31,9 +31,12 @@ Options:
   --sanitize             apply html_parser's default sanitizer before formatting
   --strict               fail on the first parse error
   --inspect              write an outline, link, metadata, and accessibility report instead of formatted HTML
+  --text                 write clean extracted text instead of formatted HTML
+  --markdown             write Markdown converted from the parsed HTML
+  --html-passthrough     with --markdown, preserve unsupported HTML instead of dropping it
   --json                 with --inspect, write compact JSON instead of Markdown
   -f, --file <file>      input file; stdin is used when omitted
-  -o, --output <output>  write formatted HTML or inspection report to a guest-visible file
+  -o, --output <output>  write command output to a guest-visible file
   -i, --indent <indent>  pretty-print indentation [default: 2]
   --limit <limit>        maximum headings, links, metadata, and issues to include in reports [default: 40]
 ```
@@ -106,6 +109,45 @@ $ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --inspect --json --d
 {"elements":16,"forms":1,"headings":[{"level":1,"text":"Portable Skills"},{"level":2,"text":"Checklist"}],"images":1,"images_missing_alt":1,"issues":[{"message":"link with href has no text: /empty","severity":"medium"},{"message":"image missing alt text: chart.png","severity":"medium"},{"message":"script present: app.js","severity":"info"}],"links":[{"href":"https://mooncakes.io","text":"MoonCakes"},{"href":"/empty","text":""}],"metadata":[{"key":"title","value":"Portable Skills"},{"key":"description","value":"MoonBit Wasm agent tools"},{"key":"og:title","value":"Portable CLI"}],"root_kind":"Document","scripts":1,"text_chars":155}
 ```
 
+## Extract Text
+
+`--text` emits clean block-oriented text for summarization, search snippets, or
+agent context where HTML tags add noise.
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --text --file tests/cram/fixtures/html/markdown.html
+Portable Skills
+Ship MoonBit tools as Wasm.
+Build once
+Run with MoonCakes
+```
+
+## Convert To Markdown
+
+`--markdown` converts parsed HTML into Markdown that is easier for agents and
+humans to read. The converter keeps semantic links, lists, inline emphasis, and
+code blocks.
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --markdown --file tests/cram/fixtures/html/markdown.html
+# Portable Skills
+
+Ship **MoonBit** tools as Wasm.
+
+- Build once
+- Run with [MoonCakes](https://mooncakes.io)
+```
+
+Use `--html-passthrough` with Markdown output when preserving unsupported
+source HTML is better than dropping it.
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --markdown --html-passthrough '<table><tr><td>A</td></tr></table><p>Done</p>'
+<table><tbody><tr><td>A</td></tr></tbody></table>
+
+Done
+```
+
 ## Compact Output
 
 Use `--compact` when the caller wants normalized HTML without pretty-print
@@ -158,7 +200,8 @@ $ root="$TESTDIR/../.."; out=".tmp/moon-cram-htmlfmt-out.html"; rm -f "$root/$ou
 ## Bundled Skill Artifact
 
 The `portable-html` skill commits a release Wasm artifact, so an agent can run
-HTML formatting and inspection through `moonrun` without a MoonBit build step.
+HTML formatting, inspection, text extraction, and Markdown conversion through
+`moonrun` without a MoonBit build step.
 
 ```mooncram
 $ root="$TESTDIR/../.."; (cd "$root" && moonrun skills/portable-html/assets/htmlfmt.wasm --inspect --document --limit 2 --file tests/cram/fixtures/html/report.html)
@@ -199,4 +242,14 @@ $ root="$TESTDIR/../.."; (cd "$root" && moonrun skills/portable-html/assets/html
 |---|---|
 | medium | link with href has no text: /empty |
 | medium | image missing alt text: chart.png |
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; (cd "$root" && moonrun skills/portable-html/assets/htmlfmt.wasm --markdown --file tests/cram/fixtures/html/markdown.html)
+# Portable Skills
+
+Ship **MoonBit** tools as Wasm.
+
+- Build once
+- Run with [MoonCakes](https://mooncakes.io)
 ```

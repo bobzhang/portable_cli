@@ -42,6 +42,21 @@ fn command() -> @argparse.Command {
         about="write an outline, link, metadata, and accessibility report instead of formatted HTML",
       ),
       @argparse.FlagArg(
+        "text",
+        long="text",
+        about="write clean extracted text instead of formatted HTML",
+      ),
+      @argparse.FlagArg(
+        "markdown",
+        long="markdown",
+        about="write Markdown converted from the parsed HTML",
+      ),
+      @argparse.FlagArg(
+        "html-passthrough",
+        long="html-passthrough",
+        about="with --markdown, preserve unsupported HTML instead of dropping it",
+      ),
+      @argparse.FlagArg(
         "json",
         long="json",
         about="with --inspect, write compact JSON instead of Markdown",
@@ -58,7 +73,7 @@ fn command() -> @argparse.Command {
         "output",
         short='o',
         long="output",
-        about="write formatted HTML or inspection report to a guest-visible file",
+        about="write command output to a guest-visible file",
       ),
       @argparse.OptionArg(
         "indent",
@@ -92,6 +107,34 @@ fn parse() -> @argparse.Matches {
   let env = @miniio.get_env_vars() catch { _ => {} }
   command().parse(argv=args[1:], env~) catch {
     err => die(err.to_string(), 2)
+  }
+}
+
+///|
+fn output_mode_count(matches : @argparse.Matches) -> Int {
+  let mut count = 0
+  if flag(matches, "inspect") {
+    count += 1
+  }
+  if flag(matches, "text") {
+    count += 1
+  }
+  if flag(matches, "markdown") {
+    count += 1
+  }
+  count
+}
+
+///|
+fn validate_output_modes(matches : @argparse.Matches) -> Unit {
+  if output_mode_count(matches) > 1 {
+    die("htmlfmt: choose only one of --inspect, --text, or --markdown", 2)
+  }
+  if flag(matches, "json") && !flag(matches, "inspect") {
+    die("htmlfmt: --json requires --inspect", 2)
+  }
+  if flag(matches, "html-passthrough") && !flag(matches, "markdown") {
+    die("htmlfmt: --html-passthrough requires --markdown", 2)
   }
 }
 
@@ -186,6 +229,24 @@ fn format_html(input : String, matches : @argparse.Matches) -> String {
   let pretty = !flag(matches, "compact")
   let indent = int_value(matches, "indent", 2).clamp(min=0, max=8)
   parse_html(input, matches).to_html(pretty~, indent_size=indent) catch {
+    err => die("htmlfmt: \{html_error_message(err)}", 1)
+  }
+}
+
+///|
+fn text_html(input : String, matches : @argparse.Matches) -> String {
+  parse_html(input, matches).to_text(
+    separator="\n",
+    strip=true,
+    separator_blocks_only=true,
+  )
+}
+
+///|
+fn markdown_html(input : String, matches : @argparse.Matches) -> String {
+  parse_html(input, matches).to_markdown(
+    html_passthrough=flag(matches, "html-passthrough"),
+  ) catch {
     err => die("htmlfmt: \{html_error_message(err)}", 1)
   }
 }
@@ -556,13 +617,15 @@ fn write_output(text : String, matches : @argparse.Matches) -> Unit {
 ///|
 fn main {
   let matches = parse()
+  validate_output_modes(matches)
   let input = read_input(matches).trim().to_owned()
   let output = if flag(matches, "inspect") {
     inspect_html(input, matches)
+  } else if flag(matches, "text") {
+    text_html(input, matches)
+  } else if flag(matches, "markdown") {
+    markdown_html(input, matches)
   } else {
-    if flag(matches, "json") {
-      die("htmlfmt: --json requires --inspect", 2)
-    }
     format_html(input, matches)
   }
   write_output(output, matches)

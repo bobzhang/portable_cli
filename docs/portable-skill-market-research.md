@@ -399,7 +399,8 @@ data.
 
 ### Tier 1: High Fit, Low External Dependency
 
-These are the best next examples after `htmlfmt`.
+These are the best next examples after `htmlfmt`. The current `htmlfmt` command
+now covers the first two rows directly with `--text` and `--markdown`.
 
 | Skill CLI | Purpose | Key Code |
 | --- | --- | --- |
@@ -507,5 +508,6 @@ high demand, clear boundaries, strong sandboxing benefits, and relatively small
 runtime artifacts.
 
 `cmd/htmlfmt` is a good proof point: it uses a real published parser package,
+formats and sanitizes HTML, extracts clean text, converts HTML to Markdown,
 compiles to a sub-1MB release WASM module, runs under Wasmtime, and is tested
 with executable Cram documentation.

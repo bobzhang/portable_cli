@@ -1,14 +1,14 @@
 ---
 name: portable-html
-description: Use this when a user asks to format, sanitize, inspect, outline, audit links, or summarize metadata from local HTML using moonrun and the bundled portable htmlfmt WASM artifact from this skill.
+description: Use this when a user asks to format, sanitize, inspect, outline, audit links, extract clean text, or convert local HTML to Markdown using moonrun and the bundled portable htmlfmt WASM artifact from this skill.
 ---
 
 # Portable HTML
 
-Use this skill to format and inspect WASI-visible HTML files without a native
-HTML toolchain. It is best for agent workflows that need quick page triage,
-metadata extraction, link review, basic accessibility hints, or normalized HTML
-before further processing.
+Use this skill to format, inspect, and convert WASI-visible HTML files without a
+native HTML toolchain. It is best for agent workflows that need quick page
+triage, metadata extraction, link review, basic accessibility hints, clean text,
+Markdown, or normalized HTML before further processing.
 
 ## Quick Start
 
@@ -27,6 +27,20 @@ moonrun /path/to/portable-html/assets/htmlfmt.wasm \
   --output formatted.html
 ```
 
+Extract readable text:
+
+```sh
+moonrun /path/to/portable-html/assets/htmlfmt.wasm \
+  --text --file page.html
+```
+
+Convert HTML to Markdown:
+
+```sh
+moonrun /path/to/portable-html/assets/htmlfmt.wasm \
+  --markdown --file page.html
+```
+
 Sanitize and compact untrusted HTML:
 
 ```sh
@@ -41,13 +55,18 @@ moonrun /path/to/portable-html/assets/htmlfmt.wasm \
 2. Check the report for metadata, outline, links, missing image alt text,
    scripts, and forms.
 3. Use `--json` with `--inspect` when another tool should consume the report.
-4. Use `--sanitize` before formatting untrusted fragments.
-5. Use `--limit N` to keep inspection output concise.
+4. Use `--text` for concise summaries, search snippets, or prompt context.
+5. Use `--markdown` when preserving headings, lists, links, and emphasis matters.
+6. Use `--sanitize` before formatting untrusted fragments.
+7. Use `--limit N` to keep inspection output concise.
 
 ## Useful Options
 
 - `--inspect`: write a Markdown inspection report instead of formatted HTML.
 - `--json`: with `--inspect`, write compact JSON.
+- `--text`: write clean block-oriented text.
+- `--markdown`: convert the parsed HTML to Markdown.
+- `--html-passthrough`: with `--markdown`, preserve unsupported source HTML.
 - `--document`: parse as a full document instead of a fragment.
 - `--sanitize`: apply the default sanitizer before formatting or inspection.
 - `--compact`: write compact normalized HTML.
