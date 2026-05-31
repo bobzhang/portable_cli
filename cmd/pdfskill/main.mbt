@@ -82,6 +82,18 @@ struct PdfTextSummary {
 }
 
 ///|
+struct PdfAttachmentSummary {
+  name : String
+  filespec_object : Int
+  embedded_object : Int
+  raw_bytes : Int
+  decoded_bytes : String
+  filters : String
+  extracted_path : String
+  note : String
+}
+
+///|
 enum PdfSkillCommand {
   Brief(String, Bool, String?)
   Doctor(String)
@@ -90,6 +102,7 @@ enum PdfSkillCommand {
   Streams(String, Int, Bool, Int, Bool)
   Metadata(String, Int, Bool)
   Text(String, Int, Bool)
+  Attachments(String, Int, String?, Bool)
   MakeText(String?, String, String, Array[String])
 }
 
@@ -288,6 +301,37 @@ fn command() -> @argparse.Command {
         ],
       ),
       @argparse.Command(
+        "attachments",
+        about="List and optionally extract embedded file attachments.",
+        flags=[
+          @argparse.FlagArg(
+            "json",
+            long="json",
+            about="write compact JSON instead of Markdown",
+          ),
+        ],
+        options=[
+          @argparse.OptionArg(
+            "limit",
+            long="limit",
+            about="maximum attachments to print",
+            default_values=["40"],
+          ),
+          @argparse.OptionArg(
+            "extract-dir",
+            long="extract-dir",
+            about="write decoded embedded files into this directory",
+          ),
+        ],
+        positionals=[
+          @argparse.PositionArg(
+            "input",
+            about="input PDF path",
+            num_args=@argparse.ValueRange::single(),
+          ),
+        ],
+      ),
+      @argparse.Command(
         "make-text",
         about="Create a simple one-page text PDF.",
         options=[
@@ -366,6 +410,13 @@ fn parse() -> PdfSkillCommand {
       Text(
         required_value(sub, "input"),
         int_value(sub, "max-chars", 2000),
+        flag(sub, "json"),
+      )
+    Some(("attachments", sub)) =>
+      Attachments(
+        required_value(sub, "input"),
+        int_value(sub, "limit", 40),
+        option(sub, "extract-dir"),
         flag(sub, "json"),
       )
     Some(("make-text", sub)) =>
@@ -2138,6 +2189,8 @@ fn main {
     Metadata(input, max_bytes, as_json) =>
       run_metadata(input, max_bytes, as_json)
     Text(input, max_chars, as_json) => run_text(input, max_chars, as_json)
+    Attachments(input, limit, extract_dir, as_json) =>
+      run_attachments(input, limit, extract_dir, as_json)
     MakeText(output, title, page_size, words) =>
       run_make_text(output, title, page_size, words)
   }

@@ -16,8 +16,9 @@ pandoc tests/cram/fixtures/pandoc-report.md \
 ```
 
 The smaller `active-action.pdf` is hand-authored so the active-content risk
-case has tiny, stable object offsets. `metadata-info.pdf` is also hand-authored
-and keeps Info dictionary and XMP metadata fields stable.
+case has tiny, stable object offsets. `metadata-info.pdf` and
+`embedded-file.pdf` are also hand-authored so Info/XMP metadata and attachment
+examples stay stable.
 
 ## CLI Help
 
@@ -31,14 +32,15 @@ Usage: pdfskill <command>
 Portable PDF inspection, extraction, and creation for agent skills.
 
 Commands:
-  brief      Write an agent-readable Markdown or JSON triage report.
-  doctor     Run quick structural checks and print pass/warn lines.
-  map        List indirect object candidates with byte offsets.
-  objects    Parse and summarize indirect objects, dictionaries, and streams.
-  streams    List PDF streams and optionally decode bounded previews.
-  metadata   Extract common Info dictionary fields and XMP metadata previews.
-  text       Best-effort text extraction from decoded content streams.
-  make-text  Create a simple one-page text PDF.
+  brief        Write an agent-readable Markdown or JSON triage report.
+  doctor       Run quick structural checks and print pass/warn lines.
+  map          List indirect object candidates with byte offsets.
+  objects      Parse and summarize indirect objects, dictionaries, and streams.
+  streams      List PDF streams and optionally decode bounded previews.
+  metadata     Extract common Info dictionary fields and XMP metadata previews.
+  text         Best-effort text extraction from decoded content streams.
+  attachments  List and optionally extract embedded file attachments.
+  make-text    Create a simple one-page text PDF.
 
 Options:
   -h, --help     Show help information.
@@ -148,6 +150,22 @@ Options:
   -h, --help               Show help information.
   --json                   write compact JSON instead of Markdown
   --max-chars <max-chars>  maximum extracted characters to print [default: 2000]
+```
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/pdfskill -- attachments --help
+Usage: pdfskill attachments [options] <input>
+
+List and optionally extract embedded file attachments.
+
+Arguments:
+  input  input PDF path
+
+Options:
+  -h, --help                   Show help information.
+  --json                       write compact JSON instead of Markdown
+  --limit <limit>              maximum attachments to print [default: 40]
+  --extract-dir <extract-dir>  write decoded embedded files into this directory
 ```
 
 ```mooncram
@@ -424,6 +442,45 @@ Metadata fixture
 ```mooncram
 $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/metadata-info.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- text --json --max-chars 20 "$fixture"
 {"extracted_chars":16,"fragments":1,"path":"tests/cram/fixtures/metadata-info.pdf","streams_scanned":1,"text":"Metadata fixture"}
+```
+
+## Embedded Attachments
+
+`attachments` finds `/Filespec` objects with `/EF` embedded-file references and
+can write decoded attachment bytes into a guest-visible directory. This gives an
+agent a concrete artifact to inspect instead of only a report.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/embedded-file.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- attachments "$fixture"
+# PDF Attachments
+
+- path: `tests/cram/fixtures/embedded-file.pdf`
+- listed: 1
+- limit: 40
+
+| name | filespec object | embedded object | raw bytes | decoded bytes | filters | extracted path | note |
+|---|---:|---:|---:|---:|---|---|---|
+| hello.txt | 7 | 8 | 26 | 26 | - | - | not-extracted |
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/embedded-file.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- attachments --json "$fixture"
+{"attachments":[{"decoded_bytes":"26","embedded_object":8,"extracted_path":"-","filespec_object":7,"filters":"-","name":"hello.txt","note":"not-extracted","raw_bytes":26}],"extract_dir":null,"limit":40,"listed":1,"path":"tests/cram/fixtures/embedded-file.pdf"}
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/embedded-file.pdf"; rm -rf "$root/.tmp/pdfskill-attachments"; moon -C "$root" run --target wasm cmd/pdfskill -- attachments --extract-dir .tmp/pdfskill-attachments "$fixture"; printf '%s\n' "$(cat "$root/.tmp/pdfskill-attachments/hello.txt")"; rm -rf "$root/.tmp/pdfskill-attachments"
+# PDF Attachments
+
+- path: `tests/cram/fixtures/embedded-file.pdf`
+- listed: 1
+- limit: 40
+- extract dir: `.tmp/pdfskill-attachments`
+
+| name | filespec object | embedded object | raw bytes | decoded bytes | filters | extracted path | note |
+|---|---:|---:|---:|---:|---|---|---|
+| hello.txt | 7 | 8 | 26 | 26 | - | .tmp/pdfskill-attachments/hello.txt | extracted |
+Hello from embedded file.
 ```
 
 ## Simple PDF Creation

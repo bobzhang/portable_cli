@@ -15,7 +15,8 @@ declarative CLI parsing.
   `--file`, supports `--get`, `--raw`, `--compact`, `--indent`, and `--output`.
 - `cmd/pdfskill`: portable PDF tooling built on small `bobzhang/pdflite`
   packages. It reports structure/risk signals, inspects objects and streams,
-  extracts lightweight metadata/text, and can create a simple one-page text PDF.
+  extracts lightweight metadata/text/attachments, and can create a simple
+  one-page text PDF.
 - `cmd/repopack`: repository context packer for WASI-visible text files. It
   walks directories deterministically, skips common build/dependency folders by
   default, caps file content, and emits Markdown.
@@ -88,4 +89,5 @@ MoonBit build step:
 moonrun skills/portable-repopack/assets/repopack.wasm --max-files 80 --max-chars 8000 .
 moonrun skills/portable-pdf/assets/pdfskill.wasm doctor input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm text input.pdf
+moonrun skills/portable-pdf/assets/pdfskill.wasm attachments --extract-dir attachments input.pdf
 ```
