@@ -61,3 +61,20 @@ $ printf 'MoonBit cram docs\n' | COW_WIDTH=12 moon -C "$TESTDIR/../.." run --tar
              U  ||----w |
                 ||     ||
 ```
+
+## Bundled Skill Artifact
+
+The `portable-cow` skill commits a release Wasm artifact, so agents can run a
+tiny visual `moonrun` smoke test with no MoonBit build step.
+
+```mooncram
+$ root="$TESTDIR/../.."; (cd "$root" && moonrun skills/portable-cow/assets/cow.wasm --width 18 portable wasm cli)
+ ___________________
+< portable wasm cli >
+ -------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+```

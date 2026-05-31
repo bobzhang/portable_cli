@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable Cow"
+  short_description: "Render an ASCII cow with moonrun"
+  default_prompt: "Use $portable-cow to render a tiny portable ASCII cow smoke test."

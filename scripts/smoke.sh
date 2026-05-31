@@ -25,6 +25,8 @@ printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Catalog /Pages 2 0 R /OpenAction 4
 
 moon run --target wasm cmd/cow -- --width 24 portable wasm cli >/tmp/portable-cli-cow.out
 grep 'portable wasm cli' /tmp/portable-cli-cow.out >/dev/null
+moonrun skills/portable-cow/assets/cow.wasm --width 24 portable wasm cli >/tmp/portable-cli-cow-skill.out
+grep 'portable wasm cli' /tmp/portable-cli-cow-skill.out >/dev/null
 
 moon run --target wasm cmd/datascout -- --file "$tmp/data.csv" >/tmp/portable-cli-datascout.out
 grep 'Data Scout' /tmp/portable-cli-datascout.out >/dev/null

@@ -99,6 +99,7 @@ release WASM artifacts and run through `moonrun`, so the agent does not need a
 MoonBit build step:
 
 ```sh
+moonrun skills/portable-cow/assets/cow.wasm --width 24 portable wasm cli
 moonrun skills/portable-repopack/assets/repopack.wasm --redact-secrets --stats --budget-chars 30000 .
 moonrun skills/portable-secretscan/assets/secretscan.wasm --fail-on high .
 moonrun skills/portable-datascout/assets/datascout.wasm --file data.csv --sample 3
