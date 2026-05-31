@@ -17,9 +17,9 @@ pandoc tests/cram/fixtures/pandoc-report.md \
 
 The smaller `active-action.pdf` is hand-authored so the active-content risk
 case has tiny, stable object offsets. `metadata-info.pdf`, `embedded-file.pdf`,
-`link-action.pdf`, `form-fields.pdf`, `page-map.pdf`, and `image-xobject.pdf`
-are also hand-authored so Info/XMP metadata, attachment, link, AcroForm,
-page-map, and image examples stay stable.
+`link-action.pdf`, `form-fields.pdf`, `page-map.pdf`, `image-xobject.pdf`, and
+`action-signals.pdf` are also hand-authored so Info/XMP metadata, attachment,
+link, AcroForm, page-map, image, and action examples stay stable.
 
 ## CLI Help
 
@@ -40,6 +40,7 @@ Commands:
   objects      Parse and summarize indirect objects, dictionaries, and streams.
   streams      List PDF streams and optionally decode bounded previews.
   images       List image XObject streams and dimensions.
+  actions      List active-content and navigation action signals.
   metadata     Extract common Info dictionary fields and XMP metadata previews.
   text         Best-effort text extraction from decoded content streams.
   attachments  List and optionally extract embedded file attachments.
@@ -156,6 +157,21 @@ Options:
   --json           write compact JSON instead of Markdown
   --decode         decode supported stream filters to report decoded byte counts
   --limit <limit>  maximum images to print [default: 40]
+```
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/pdfskill -- actions --help
+Usage: pdfskill actions [options] <input>
+
+List active-content and navigation action signals.
+
+Arguments:
+  input  input PDF path
+
+Options:
+  -h, --help       Show help information.
+  --json           write compact JSON instead of Markdown
+  --limit <limit>  maximum action objects to print [default: 60]
 ```
 
 ```mooncram
@@ -505,6 +521,33 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/image-xobject.pdf"; moon -
 {"decode":true,"images":[{"bits_per_component":"8","color_space":"/DeviceGray","decoded_bytes":"1","filters":"-","height":"1","note":"ok,identity","object":4,"raw_bytes":1,"width":"1"}],"images_found":1,"limit":40,"listed":1,"path":"tests/cram/fixtures/image-xobject.pdf"}
 ```
 
+## Action Signals
+
+`actions` inventories object-level active-content and navigation signals. It is
+useful for routing files that contain open actions, JavaScript, launch actions,
+or annotation links before rendering or opening them.
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/action-signals.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- actions "$fixture"
+# PDF Actions
+
+- path: `tests/cram/fixtures/action-signals.pdf`
+- actions found: 3
+- listed: 3
+- limit: 60
+
+| object | risk | trigger | action type | target | note |
+|---:|---|---|---|---|---|
+| 1 | medium | /OpenAction | open-action | ref:4 | open-action |
+| 4 | high | /S,/JS | /JavaScript | app.alert("hello") | direct-action,javascript |
+| 5 | info | /A | /URI | https://example.com/review | annotation-action,uri |
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/action-signals.pdf"; moon -C "$root" run --target wasm cmd/pdfskill -- actions --json "$fixture"
+{"actions":[{"action_type":"open-action","note":"open-action","object":1,"risk":"medium","target":"ref:4","trigger":"/OpenAction"},{"action_type":"/JavaScript","note":"direct-action,javascript","object":4,"risk":"high","target":"app.alert(\"hello\")","trigger":"/S,/JS"},{"action_type":"/URI","note":"annotation-action,uri","object":5,"risk":"info","target":"https://example.com/review","trigger":"/A"}],"actions_found":3,"limit":60,"listed":3,"path":"tests/cram/fixtures/action-signals.pdf"}
+```
+
 ## Metadata Extraction
 
 `metadata` extracts common Info dictionary fields from parsed objects and detects
@@ -753,6 +796,22 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/image-xobject.pdf"; (cd "$
 | object | width | height | color space | bits | filters | raw bytes | decoded bytes | note |
 |---:|---:|---:|---|---:|---|---:|---:|---|
 | 4 | 1 | 1 | /DeviceGray | 8 | - | 1 | - | ok |
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/action-signals.pdf"; (cd "$root" && moonrun skills/portable-pdf/assets/pdfskill.wasm actions "$fixture")
+# PDF Actions
+
+- path: `tests/cram/fixtures/action-signals.pdf`
+- actions found: 3
+- listed: 3
+- limit: 60
+
+| object | risk | trigger | action type | target | note |
+|---:|---|---|---|---|---|
+| 1 | medium | /OpenAction | open-action | ref:4 | open-action |
+| 4 | high | /S,/JS | /JavaScript | app.alert("hello") | direct-action,javascript |
+| 5 | info | /A | /URI | https://example.com/review | annotation-action,uri |
 ```
 
 ```mooncram

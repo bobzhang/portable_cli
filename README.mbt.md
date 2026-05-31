@@ -20,8 +20,8 @@ declarative CLI parsing.
   `--file`, supports `--get`, `--raw`, `--compact`, `--indent`, and `--output`.
 - `cmd/pdfskill`: portable PDF tooling built on small `bobzhang/pdflite`
   packages. It reports structure/risk signals, maps pages, inspects objects and
-  streams/images, extracts lightweight metadata/text/links/forms/attachments,
-  and can create a simple one-page text PDF.
+  streams, inventories images and actions, extracts lightweight metadata, text,
+  links, forms, and attachments, and can create a simple one-page text PDF.
 - `cmd/repopack`: repository context packer for WASI-visible text files. It
   walks directories deterministically, skips common build/dependency folders by
   default, caps file content, optionally redacts secret-like values, and emits
@@ -107,6 +107,7 @@ moonrun skills/portable-html/assets/htmlfmt.wasm --inspect --document --file pag
 moonrun skills/portable-pdf/assets/pdfskill.wasm doctor input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm pages input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm images input.pdf
+moonrun skills/portable-pdf/assets/pdfskill.wasm actions input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm text input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm links input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm forms input.pdf

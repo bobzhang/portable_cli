@@ -40,6 +40,12 @@ moonrun /path/to/portable-pdf/assets/pdfskill.wasm images input.pdf
 moonrun /path/to/portable-pdf/assets/pdfskill.wasm images --decode input.pdf
 ```
 
+Use `actions` before opening suspicious PDFs:
+
+```sh
+moonrun /path/to/portable-pdf/assets/pdfskill.wasm actions input.pdf
+```
+
 Use `metadata`, `text`, `links`, and `forms` for lightweight extraction:
 
 ```sh
@@ -74,8 +80,8 @@ moonrun /path/to/portable-pdf/assets/pdfskill.wasm brief --json -o pdf-brief.jso
    signals.
 2. Use `brief` when the result should be pasted into a conversation or saved as
    task context.
-3. Use `pages`, `objects`, `streams`, and `images` when debugging page
-   references, offsets, filters, or suspicious object placement.
+3. Use `pages`, `objects`, `streams`, `images`, and `actions` when debugging
+   page references, offsets, filters, or suspicious object placement.
 4. Use `metadata`, `text`, `links`, `forms`, and `attachments` for bounded
    extraction before escalating to a heavier renderer or semantic parser.
 5. Use `make-text` when an agent needs to emit a minimal PDF without depending

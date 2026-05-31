@@ -89,6 +89,23 @@ struct PdfImageSummary {
 }
 
 ///|
+struct PdfActionSummary {
+  object_number : Int
+  trigger : String
+  action_type : String
+  target : String
+  risk : String
+  note : String
+}
+
+///|
+struct PdfActionsSummary {
+  path : String
+  actions_found : Int
+  actions : Array[PdfActionSummary]
+}
+
+///|
 struct PdfImagesSummary {
   path : String
   images_found : Int
@@ -168,6 +185,7 @@ enum PdfSkillCommand {
   Objects(String, Int, String?, Bool)
   Streams(String, Int, Bool, Int, Bool)
   Images(String, Int, Bool, Bool)
+  Actions(String, Int, Bool)
   Metadata(String, Int, Bool)
   Text(String, Int, Bool)
   Attachments(String, Int, String?, Bool)
@@ -365,6 +383,32 @@ fn command() -> @argparse.Command {
             long="limit",
             about="maximum images to print",
             default_values=["40"],
+          ),
+        ],
+        positionals=[
+          @argparse.PositionArg(
+            "input",
+            about="input PDF path",
+            num_args=@argparse.ValueRange::single(),
+          ),
+        ],
+      ),
+      @argparse.Command(
+        "actions",
+        about="List active-content and navigation action signals.",
+        flags=[
+          @argparse.FlagArg(
+            "json",
+            long="json",
+            about="write compact JSON instead of Markdown",
+          ),
+        ],
+        options=[
+          @argparse.OptionArg(
+            "limit",
+            long="limit",
+            about="maximum action objects to print",
+            default_values=["60"],
           ),
         ],
         positionals=[
@@ -590,6 +634,12 @@ fn parse() -> PdfSkillCommand {
         required_value(sub, "input"),
         int_value(sub, "limit", 40),
         flag(sub, "decode"),
+        flag(sub, "json"),
+      )
+    Some(("actions", sub)) =>
+      Actions(
+        required_value(sub, "input"),
+        int_value(sub, "limit", 60),
         flag(sub, "json"),
       )
     Some(("metadata", sub)) =>
@@ -2393,6 +2443,7 @@ fn main {
       run_streams(input, limit, decode, max_bytes, as_json)
     Images(input, limit, decode, as_json) =>
       run_images(input, limit, decode, as_json)
+    Actions(input, limit, as_json) => run_actions(input, limit, as_json)
     Metadata(input, max_bytes, as_json) =>
       run_metadata(input, max_bytes, as_json)
     Text(input, max_chars, as_json) => run_text(input, max_chars, as_json)
