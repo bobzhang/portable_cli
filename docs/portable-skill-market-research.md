@@ -402,7 +402,8 @@ data.
 These are the best next examples after `htmlfmt`. The current `htmlfmt` command
 now covers the first three rows directly with `--text`, `--markdown`, and
 `--select`; `mdskill` covers the Markdown document-structure slice; `svgcheck`
-covers the SVG inspection row.
+covers the SVG inspection row; `tomlskill` covers the TOML config row with a
+lightweight scanner and formatter.
 
 | Skill CLI | Purpose | Key Code |
 | --- | --- | --- |

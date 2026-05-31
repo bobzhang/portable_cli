@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portable TOML"
+  short_description: "Inspect, normalize, and extract values from TOML-style config with moonrun"
+  default_prompt: "Use $portable-toml to inspect TOML-style config with the bundled portable Wasm artifact."

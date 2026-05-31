@@ -3,6 +3,6 @@
 /// Run individual commands with `moon run --target wasm cmd/<name>`.
 fn main {
   println(
-    "portable_cli commands: cmd/cow, cmd/datascout, cmd/diffskill, cmd/htmlfmt, cmd/jqlet, cmd/mdskill, cmd/pdfskill, cmd/repopack, cmd/secretscan, cmd/svgcheck, cmd/tree, cmd/pulse",
+    "portable_cli commands: cmd/cow, cmd/datascout, cmd/diffskill, cmd/htmlfmt, cmd/jqlet, cmd/mdskill, cmd/pdfskill, cmd/repopack, cmd/secretscan, cmd/svgcheck, cmd/tomlskill, cmd/tree, cmd/pulse",
   )
 }

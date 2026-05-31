@@ -17,6 +17,7 @@ printf '{"items":[{"name":"moon"},{"name":"wasm"}],"ok":true}\n' > "$tmp/data.js
 printf 'id,name,score\n1,Ada,9.5\n2,Bob,7\n' > "$tmp/data.csv"
 printf '%s\n' '---' 'title: Smoke' '---' '' '# Smoke' '' 'See [MoonBit](https://www.moonbitlang.com) and [empty]().' '' '- [ ] todo' '- [x] done' '' '```moonbit' 'fn main {}' '```' > "$tmp/note.md"
 printf '%s\n' '<svg width="16" height="16" viewBox="0 0 16 16" onload="boot()">' '  <image href="https://example.com/pixel.png" width="1" height="1"/>' '  <script>alert(1)</script>' '</svg>' > "$tmp/icon.svg"
+printf '%s\n' 'name = "smoke"' '' '[package]' 'version = "1.0.0"' 'enabled = true' '' '[package]' 'duplicate = true' > "$tmp/config.toml"
 printf '%s\n' 'diff --git a/a.txt b/a.txt' '--- a/a.txt' '+++ b/a.txt' '@@ -1 +1 @@' '-old' '+new' > "$tmp/change.diff"
 printf 'OPENAI_API_KEY=sk-test-abcdefghijklmnopqrstuvwxyz1234567890\n' > "$tmp/secrets.env"
 printf '%s\n' '%PDF-1.4' '1 0 obj' '<< /Type /Catalog /Pages 2 0 R /OpenAction 3 0 R >>' 'endobj' '2 0 obj' '<< /Type /Pages /Count 1 /Kids [3 0 R] >>' 'endobj' '3 0 obj' '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>' 'endobj' 'xref' '0 4' '0000000000 65535 f' 'trailer' '<< /Root 1 0 R /Size 4 >>' 'startxref' '187' '%%EOF' > "$tmp/input.pdf"
@@ -80,11 +81,11 @@ grep 'https://example.com' /tmp/portable-cli-pdfskill-links.out >/dev/null
 moon run --target wasm cmd/pdfskill -- forms "$tmp/form.pdf" >/tmp/portable-cli-pdfskill-forms.out
 grep 'agent@example.com' /tmp/portable-cli-pdfskill-forms.out >/dev/null
 
-moon run --target wasm cmd/repopack -- --max-files 16 --max-chars 80 --output "$tmp/repo.md" "$tmp"
+moon run --target wasm cmd/repopack -- --max-files 24 --max-chars 80 --output "$tmp/repo.md" "$tmp"
 grep 'Portable repo pack' "$tmp/repo.md" >/dev/null
-moon run --target wasm cmd/repopack -- --stats --budget-chars 80 --max-files 16 --max-chars 80 --output "$tmp/repo-budget.md" "$tmp"
+moon run --target wasm cmd/repopack -- --stats --budget-chars 80 --max-files 24 --max-chars 80 --output "$tmp/repo-budget.md" "$tmp"
 grep 'Extension Summary' "$tmp/repo-budget.md" >/dev/null
-moon run --target wasm cmd/repopack -- --redact-secrets --ext env,md,txt --max-files 16 --max-chars 120 --output "$tmp/repo-redacted.md" "$tmp"
+moon run --target wasm cmd/repopack -- --redact-secrets --ext env,md,txt --max-files 24 --max-chars 120 --output "$tmp/repo-redacted.md" "$tmp"
 grep -F '[REDACTED:api-key]' "$tmp/repo-redacted.md" >/dev/null
 
 moon run --target wasm cmd/secretscan -- "$tmp" >/tmp/portable-cli-secretscan.out
@@ -97,6 +98,13 @@ grep '"scripts":1' /tmp/portable-cli-svgcheck-json.out >/dev/null
 moonrun skills/portable-svg/assets/svgcheck.wasm --file "$tmp/icon.svg" --json >/tmp/portable-cli-svgcheck-skill.out
 grep '"scripts":1' /tmp/portable-cli-svgcheck-skill.out >/dev/null
 
+moon run --target wasm cmd/tomlskill -- --file "$tmp/config.toml" --section issues >/tmp/portable-cli-tomlskill.out
+grep 'duplicate table: package' /tmp/portable-cli-tomlskill.out >/dev/null
+moon run --target wasm cmd/tomlskill -- --file "$tmp/config.toml" --get package.version --raw >/tmp/portable-cli-tomlskill-get.out
+grep '"1.0.0"' /tmp/portable-cli-tomlskill-get.out >/dev/null
+moonrun skills/portable-toml/assets/tomlskill.wasm --file "$tmp/config.toml" --get package.version --raw >/tmp/portable-cli-tomlskill-skill.out
+grep '"1.0.0"' /tmp/portable-cli-tomlskill-skill.out >/dev/null
+
 moon run --target wasm cmd/tree -- --depth 2 "$tmp/src" >/tmp/portable-cli-tree.out
 grep 'nested/' /tmp/portable-cli-tree.out >/dev/null
 moonrun skills/portable-tree/assets/tree.wasm --depth 2 "$tmp/src" >/tmp/portable-cli-tree-skill.out
@@ -107,7 +115,7 @@ grep 'wasm' /tmp/portable-cli-pulse.out >/dev/null
 moonrun skills/portable-pulse/assets/pulse.wasm --file "$tmp/input.txt" --top 2 --width 8 >/tmp/portable-cli-pulse-skill.out
 grep 'wasm' /tmp/portable-cli-pulse-skill.out >/dev/null
 
-moon build --target wasm cmd/cow cmd/datascout cmd/diffskill cmd/htmlfmt cmd/jqlet cmd/mdskill cmd/pdfskill cmd/repopack cmd/secretscan cmd/svgcheck cmd/tree cmd/pulse
+moon build --target wasm cmd/cow cmd/datascout cmd/diffskill cmd/htmlfmt cmd/jqlet cmd/mdskill cmd/pdfskill cmd/repopack cmd/secretscan cmd/svgcheck cmd/tomlskill cmd/tree cmd/pulse
 
 if command -v wasmtime >/dev/null 2>&1; then
   moonbit_runtime="wasm/moonbit-sys-unstable.wat"
@@ -121,6 +129,7 @@ if command -v wasmtime >/dev/null 2>&1; then
   repopack_wasm=$(find _build/wasm/debug/build -path '*cmd/repopack/*.wasm' | head -n 1)
   secretscan_wasm=$(find _build/wasm/debug/build -path '*cmd/secretscan/*.wasm' | head -n 1)
   svgcheck_wasm=$(find _build/wasm/debug/build -path '*cmd/svgcheck/*.wasm' | head -n 1)
+  tomlskill_wasm=$(find _build/wasm/debug/build -path '*cmd/tomlskill/*.wasm' | head -n 1)
   tree_wasm=$(find _build/wasm/debug/build -path '*cmd/tree/*.wasm' | head -n 1)
   pulse_wasm=$(find _build/wasm/debug/build -path '*cmd/pulse/*.wasm' | head -n 1)
 
@@ -169,11 +178,11 @@ if command -v wasmtime >/dev/null 2>&1; then
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$pdfskill_wasm" forms "$tmp/form.pdf" >/tmp/portable-cli-pdfskill-forms-wasmtime.out
   grep 'agent@example.com' /tmp/portable-cli-pdfskill-forms-wasmtime.out >/dev/null
 
-  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$repopack_wasm" --max-files 16 --max-chars 80 --output "$tmp/repo-wasmtime.md" "$tmp"
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$repopack_wasm" --max-files 24 --max-chars 80 --output "$tmp/repo-wasmtime.md" "$tmp"
   grep 'Portable repo pack' "$tmp/repo-wasmtime.md" >/dev/null
-  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$repopack_wasm" --stats --budget-chars 80 --max-files 16 --max-chars 80 --output "$tmp/repo-budget-wasmtime.md" "$tmp"
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$repopack_wasm" --stats --budget-chars 80 --max-files 24 --max-chars 80 --output "$tmp/repo-budget-wasmtime.md" "$tmp"
   grep 'Extension Summary' "$tmp/repo-budget-wasmtime.md" >/dev/null
-  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$repopack_wasm" --redact-secrets --ext env,md,txt --max-files 16 --max-chars 120 --output "$tmp/repo-redacted-wasmtime.md" "$tmp"
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$repopack_wasm" --redact-secrets --ext env,md,txt --max-files 24 --max-chars 120 --output "$tmp/repo-redacted-wasmtime.md" "$tmp"
   grep -F '[REDACTED:api-key]' "$tmp/repo-redacted-wasmtime.md" >/dev/null
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$secretscan_wasm" "$tmp" >/tmp/portable-cli-secretscan-wasmtime.out
@@ -183,6 +192,11 @@ if command -v wasmtime >/dev/null 2>&1; then
   grep 'event handler attribute present' /tmp/portable-cli-svgcheck-wasmtime.out >/dev/null
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$svgcheck_wasm" --file "$tmp/icon.svg" --json >/tmp/portable-cli-svgcheck-json-wasmtime.out
   grep '"scripts":1' /tmp/portable-cli-svgcheck-json-wasmtime.out >/dev/null
+
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$tomlskill_wasm" --file "$tmp/config.toml" --section issues >/tmp/portable-cli-tomlskill-wasmtime.out
+  grep 'duplicate table: package' /tmp/portable-cli-tomlskill-wasmtime.out >/dev/null
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$tomlskill_wasm" --file "$tmp/config.toml" --get package.version --raw >/tmp/portable-cli-tomlskill-get-wasmtime.out
+  grep '"1.0.0"' /tmp/portable-cli-tomlskill-get-wasmtime.out >/dev/null
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$tree_wasm" --depth 2 "$tmp/src" >/tmp/portable-cli-tree-wasmtime.out
   grep 'nested/' /tmp/portable-cli-tree-wasmtime.out >/dev/null

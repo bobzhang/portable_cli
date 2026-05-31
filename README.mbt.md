@@ -35,6 +35,9 @@ declarative CLI parsing.
 - `cmd/svgcheck`: SVG structure and risk-signal inspector. It reports
   dimensions, tag counts, scripts, event handlers, external references,
   `foreignObject`, and JSON output for automation.
+- `cmd/tomlskill`: TOML-style config inspector and simple normalizer. It
+  inventories tables and keys, detects duplicate structures, extracts dotted
+  values, and emits Markdown or JSON.
 - `cmd/tree`: deterministic directory tree rendering over guest-visible WASI
   paths. It supports `--depth`, `--all`, and `--dirs-only`.
 - `cmd/pulse`: text statistics and word-frequency bars from stdin or
@@ -57,6 +60,7 @@ moon run --target wasm cmd/pdfskill -- make-text -o output.pdf Hello from MoonBi
 moon run --target wasm cmd/repopack -- --redact-secrets --stats --budget-chars 30000 .
 moon run --target wasm cmd/secretscan -- --fail-on high .
 moon run --target wasm cmd/svgcheck -- --fail-on high --file icon.svg
+moon run --target wasm cmd/tomlskill -- --get package.version --raw --file config.toml
 moon run --target wasm cmd/tree -- --depth 2 .
 printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
 ```
@@ -66,7 +70,7 @@ printf 'wasm wasm portable cli\n' | moon run --target wasm cmd/pulse -- --top 3
 Build the WASIp1 modules:
 
 ```sh
-moon build --target wasm cmd/cow cmd/datascout cmd/diffskill cmd/htmlfmt cmd/jqlet cmd/mdskill cmd/pdfskill cmd/repopack cmd/secretscan cmd/svgcheck cmd/tree cmd/pulse
+moon build --target wasm cmd/cow cmd/datascout cmd/diffskill cmd/htmlfmt cmd/jqlet cmd/mdskill cmd/pdfskill cmd/repopack cmd/secretscan cmd/svgcheck cmd/tomlskill cmd/tree cmd/pulse
 ```
 
 Then run a built module with explicit preopened paths:
@@ -130,4 +134,5 @@ moonrun skills/portable-pdf/assets/pdfskill.wasm links input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm forms input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm attachments --extract-dir attachments input.pdf
 moonrun skills/portable-svg/assets/svgcheck.wasm --fail-on high --file icon.svg
+moonrun skills/portable-toml/assets/tomlskill.wasm --get package.version --raw --file config.toml
 ```

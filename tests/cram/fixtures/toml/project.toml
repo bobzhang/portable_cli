@@ -1,0 +1,27 @@
+# Portable TOML fixture
+name = "portable_cli"
+version = "0.1.0"
+
+[package]
+description = "Portable skills"
+license = "Apache-2.0"
+enabled = true
+version = "shadow"
+
+[dependencies]
+miniio = "0.2.0"
+html_parser = "0.1.7"
+
+[[bin]]
+name = "htmlfmt"
+path = "cmd/htmlfmt"
+
+[[bin]]
+name = "tomlskill"
+path = "cmd/tomlskill"
+
+[package]
+duplicate = true
+
+bad line here
+empty =
