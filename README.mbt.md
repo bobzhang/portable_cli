@@ -15,7 +15,7 @@ declarative CLI parsing.
 - `cmd/htmlfmt`: HTML formatter and inspector backed by
   `bobzhang/html_parser`. It reads stdin, inline HTML, or `--file`, supports
   fragment/document parsing, `--compact`, `--indent`, `--sanitize`, `--strict`,
-  `--inspect`, `--text`, `--markdown`, and `--output`.
+  `--inspect`, `--text`, `--markdown`, `--select`, and `--output`.
 - `cmd/jqlet`: JSON formatter and simple path extractor. It reads stdin or
   `--file`, supports `--get`, `--raw`, `--compact`, `--indent`, and `--output`.
 - `cmd/pdfskill`: portable PDF tooling built on small `bobzhang/pdflite`
@@ -43,6 +43,7 @@ moon run --target wasm cmd/diffskill -- --file change.diff
 moon run --target wasm cmd/htmlfmt -- '<article><p>Hello <b>MoonBit</b></p></article>'
 moon run --target wasm cmd/htmlfmt -- --inspect --document --file page.html
 moon run --target wasm cmd/htmlfmt -- --markdown --file page.html
+moon run --target wasm cmd/htmlfmt -- --select 'main a[href]' --json --document --file page.html
 printf '{"items":[{"name":"moon"}]}\n' | moon run --target wasm cmd/jqlet -- --get 'items[0].name' --raw
 moon run --target wasm cmd/pdfskill -- brief input.pdf
 moon run --target wasm cmd/pdfskill -- make-text -o output.pdf Hello from MoonBit
@@ -107,6 +108,7 @@ moonrun skills/portable-datascout/assets/datascout.wasm --file data.csv --sample
 moonrun skills/portable-diffskill/assets/diffskill.wasm --file change.diff
 moonrun skills/portable-html/assets/htmlfmt.wasm --inspect --document --file page.html
 moonrun skills/portable-html/assets/htmlfmt.wasm --markdown --file page.html
+moonrun skills/portable-html/assets/htmlfmt.wasm --select 'main a[href]' --json --document --file page.html
 moonrun skills/portable-jqlet/assets/jqlet.wasm --file data.json --get 'items[0].name' --raw
 moonrun skills/portable-pulse/assets/pulse.wasm --file notes.txt --top 5
 moonrun skills/portable-tree/assets/tree.wasm --depth 2 .

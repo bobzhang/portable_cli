@@ -1,4 +1,4 @@
 interface:
   display_name: "Portable HTML"
-  short_description: "Inspect, format, extract text, and convert HTML with moonrun"
-  default_prompt: "Use $portable-html to inspect, format, extract text from, or convert local HTML with the bundled portable Wasm artifact."
+  short_description: "Inspect, select, format, extract text, and convert HTML with moonrun"
+  default_prompt: "Use $portable-html to inspect, select from, format, extract text from, or convert local HTML with the bundled portable Wasm artifact."

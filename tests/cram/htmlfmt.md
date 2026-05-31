@@ -34,11 +34,12 @@ Options:
   --text                 write clean extracted text instead of formatted HTML
   --markdown             write Markdown converted from the parsed HTML
   --html-passthrough     with --markdown, preserve unsupported HTML instead of dropping it
-  --json                 with --inspect, write compact JSON instead of Markdown
+  --json                 with --inspect or --select, write compact JSON
   -f, --file <file>      input file; stdin is used when omitted
   -o, --output <output>  write command output to a guest-visible file
+  --select <select>      CSS selector for extracting matching nodes before rendering
   -i, --indent <indent>  pretty-print indentation [default: 2]
-  --limit <limit>        maximum headings, links, metadata, and issues to include in reports [default: 40]
+  --limit <limit>        maximum report rows or selected nodes to include [default: 40]
 ```
 
 ## Format A Fragment
@@ -148,6 +149,34 @@ $ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --markdown --html-pa
 Done
 ```
 
+## Select Matching Nodes
+
+`--select CSS` filters the parsed document before rendering. This is useful
+when an agent needs a small piece of a large page, such as all matching links,
+cards, headings, or form controls.
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --file tests/cram/fixtures/html/report.html --select 'main a[href]' --compact
+<a href="https://mooncakes.io">MoonCakes</a>
+<a href="/empty"></a>
+```
+
+Selector output can use the same text and Markdown modes.
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --file tests/cram/fixtures/html/report.html --select 'main a[href]' --markdown
+[MoonCakes](https://mooncakes.io)
+
+[](/empty)
+```
+
+Use `--json` with `--select` when another tool needs a compact match list.
+
+```mooncram
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --file tests/cram/fixtures/html/report.html --select 'main a[href]' --json
+{"matches":[{"html":"<a href=\"https://mooncakes.io\">MoonCakes</a>","index":1,"name":"a","text":"MoonCakes"},{"html":"<a href=\"/empty\"></a>","index":2,"name":"a","text":""}]}
+```
+
 ## Compact Output
 
 Use `--compact` when the caller wants normalized HTML without pretty-print
@@ -252,4 +281,9 @@ Ship **MoonBit** tools as Wasm.
 
 - Build once
 - Run with [MoonCakes](https://mooncakes.io)
+```
+
+```mooncram
+$ root="$TESTDIR/../.."; (cd "$root" && moonrun skills/portable-html/assets/htmlfmt.wasm --select 'main a[href]' --json --document --file tests/cram/fixtures/html/report.html)
+{"matches":[{"html":"<a href=\"https://mooncakes.io\">MoonCakes</a>","index":1,"name":"a","text":"MoonCakes"},{"html":"<a href=\"/empty\"></a>","index":2,"name":"a","text":""}]}
 ```

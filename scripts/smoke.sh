@@ -44,8 +44,12 @@ moon run --target wasm cmd/htmlfmt -- --text --file "$tmp/input.html" >/tmp/port
 grep 'File input' /tmp/portable-cli-htmlfmt-text.out >/dev/null
 moon run --target wasm cmd/htmlfmt -- --markdown --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-markdown.out
 grep -F 'File *input*' /tmp/portable-cli-htmlfmt-markdown.out >/dev/null
+moon run --target wasm cmd/htmlfmt -- --select 'p em' --json --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-select.out
+grep '"name":"em"' /tmp/portable-cli-htmlfmt-select.out >/dev/null
 moonrun skills/portable-html/assets/htmlfmt.wasm --markdown --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-skill.out
 grep -F 'File *input*' /tmp/portable-cli-htmlfmt-skill.out >/dev/null
+moonrun skills/portable-html/assets/htmlfmt.wasm --select 'p em' --json --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-select-skill.out
+grep '"name":"em"' /tmp/portable-cli-htmlfmt-select-skill.out >/dev/null
 
 moon run --target wasm cmd/jqlet -- --file "$tmp/data.json" --get 'items[1].name' --raw >/tmp/portable-cli-jqlet.out
 grep 'wasm' /tmp/portable-cli-jqlet.out >/dev/null
@@ -121,6 +125,8 @@ if command -v wasmtime >/dev/null 2>&1; then
   grep 'File input' /tmp/portable-cli-htmlfmt-text-wasmtime.out >/dev/null
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$htmlfmt_wasm" --markdown --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-markdown-wasmtime.out
   grep -F 'File *input*' /tmp/portable-cli-htmlfmt-markdown-wasmtime.out >/dev/null
+  wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$htmlfmt_wasm" --select 'p em' --json --file "$tmp/input.html" >/tmp/portable-cli-htmlfmt-select-wasmtime.out
+  grep '"name":"em"' /tmp/portable-cli-htmlfmt-select-wasmtime.out >/dev/null
 
   wasmtime run --dir .::. --preload __moonbit_sys_unstable="$moonbit_runtime" "$jqlet_wasm" --file "$tmp/data.json" --get 'items[1].name' --raw >/tmp/portable-cli-jqlet-wasmtime.out
   grep 'wasm' /tmp/portable-cli-jqlet-wasmtime.out >/dev/null

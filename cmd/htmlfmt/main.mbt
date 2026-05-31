@@ -59,7 +59,7 @@ fn command() -> @argparse.Command {
       @argparse.FlagArg(
         "json",
         long="json",
-        about="with --inspect, write compact JSON instead of Markdown",
+        about="with --inspect or --select, write compact JSON",
       ),
     ],
     options=[
@@ -76,6 +76,11 @@ fn command() -> @argparse.Command {
         about="write command output to a guest-visible file",
       ),
       @argparse.OptionArg(
+        "select",
+        long="select",
+        about="CSS selector for extracting matching nodes before rendering",
+      ),
+      @argparse.OptionArg(
         "indent",
         short='i',
         long="indent",
@@ -85,7 +90,7 @@ fn command() -> @argparse.Command {
       @argparse.OptionArg(
         "limit",
         long="limit",
-        about="maximum headings, links, metadata, and issues to include in reports",
+        about="maximum report rows or selected nodes to include",
         default_values=["40"],
       ),
     ],
@@ -130,8 +135,15 @@ fn validate_output_modes(matches : @argparse.Matches) -> Unit {
   if output_mode_count(matches) > 1 {
     die("htmlfmt: choose only one of --inspect, --text, or --markdown", 2)
   }
-  if flag(matches, "json") && !flag(matches, "inspect") {
-    die("htmlfmt: --json requires --inspect", 2)
+  let has_select = option(matches, "select") is Some(_)
+  if has_select && flag(matches, "inspect") {
+    die("htmlfmt: --select cannot be used with --inspect", 2)
+  }
+  if flag(matches, "json") && !flag(matches, "inspect") && !has_select {
+    die("htmlfmt: --json requires --inspect or --select", 2)
+  }
+  if flag(matches, "json") && has_select && output_mode_count(matches) > 0 {
+    die("htmlfmt: --json with --select cannot be combined with output modes", 2)
   }
   if flag(matches, "html-passthrough") && !flag(matches, "markdown") {
     die("htmlfmt: --html-passthrough requires --markdown", 2)
@@ -248,6 +260,132 @@ fn markdown_html(input : String, matches : @argparse.Matches) -> String {
     html_passthrough=flag(matches, "html-passthrough"),
   ) catch {
     err => die("htmlfmt: \{html_error_message(err)}", 1)
+  }
+}
+
+///|
+fn selected_limit(matches : @argparse.Matches) -> Int {
+  int_value(matches, "limit", 40).clamp(min=0, max=1000)
+}
+
+///|
+fn selected_nodes(
+  input : String,
+  matches : @argparse.Matches,
+  selector : String,
+) -> Array[@html_parser.Node] {
+  let parsed = parse_html(input, matches)
+  let found = parsed.query(selector)
+  let limit = selected_limit(matches)
+  let cap = if found.length() < limit { found.length() } else { limit }
+  let nodes : Array[@html_parser.Node] = []
+  for index in 0..<cap {
+    nodes.push(found[index])
+  }
+  nodes
+}
+
+///|
+fn selected_node_name(node : @html_parser.Node) -> String {
+  match node.kind() {
+    Element => node.name()
+    kind => node_kind_text(kind)
+  }
+}
+
+///|
+fn selected_node_html(
+  node : @html_parser.Node,
+  matches : @argparse.Matches,
+) -> String {
+  let pretty = !flag(matches, "compact")
+  let indent = int_value(matches, "indent", 2).clamp(min=0, max=8)
+  @html_parser.to_html(node, pretty~, indent_size=indent) catch {
+    err => die("htmlfmt: \{html_error_message(err)}", 1)
+  }
+}
+
+///|
+fn selected_node_text(node : @html_parser.Node) -> String {
+  @html_parser.to_text(
+    node,
+    separator="\n",
+    strip=true,
+    separator_blocks_only=true,
+  )
+}
+
+///|
+fn selected_node_markdown(
+  node : @html_parser.Node,
+  matches : @argparse.Matches,
+) -> String {
+  @html_parser.to_markdown(
+    node,
+    html_passthrough=flag(matches, "html-passthrough"),
+  ) catch {
+    err => die("htmlfmt: \{html_error_message(err)}", 1)
+  }
+}
+
+///|
+fn join_selected(nodes : Array[String], separator : String) -> String {
+  let out = StringBuilder()
+  for index in 0..<nodes.length() {
+    if index > 0 {
+      out.write_string(separator)
+    }
+    out.write_string(nodes[index])
+  }
+  out.to_string()
+}
+
+///|
+fn selected_json(
+  nodes : Array[@html_parser.Node],
+  matches : @argparse.Matches,
+) -> String {
+  Json::object({
+    "matches": Json::array(
+      [
+        for index in 0..<nodes.length() => {
+          Json::object({
+            "html": Json::string(selected_node_html(nodes[index], matches)),
+            "index": int_json(index + 1),
+            "name": Json::string(selected_node_name(nodes[index])),
+            "text": Json::string(selected_node_text(nodes[index])),
+          })
+        }
+      ],
+    ),
+  }).stringify()
+}
+
+///|
+fn select_html(
+  input : String,
+  matches : @argparse.Matches,
+  selector : String,
+) -> String {
+  let nodes = selected_nodes(input, matches, selector)
+  if flag(matches, "json") {
+    selected_json(nodes, matches)
+  } else {
+    let rendered = if flag(matches, "text") {
+      [
+        for node in nodes => selected_node_text(node)
+      ]
+    } else if flag(matches, "markdown") {
+      [
+        for node in nodes => selected_node_markdown(node, matches)
+      ]
+    } else {
+      [
+        for node in nodes => selected_node_html(node, matches)
+      ]
+    }
+    let separator = if flag(matches, "markdown") { "\n\n" } else { "\n" }
+    join_selected(rendered, separator)
   }
 }
 
@@ -619,14 +757,18 @@ fn main {
   let matches = parse()
   validate_output_modes(matches)
   let input = read_input(matches).trim().to_owned()
-  let output = if flag(matches, "inspect") {
-    inspect_html(input, matches)
-  } else if flag(matches, "text") {
-    text_html(input, matches)
-  } else if flag(matches, "markdown") {
-    markdown_html(input, matches)
-  } else {
-    format_html(input, matches)
+  let output = match option(matches, "select") {
+    Some(selector) => select_html(input, matches, selector)
+    None =>
+      if flag(matches, "inspect") {
+        inspect_html(input, matches)
+      } else if flag(matches, "text") {
+        text_html(input, matches)
+      } else if flag(matches, "markdown") {
+        markdown_html(input, matches)
+      } else {
+        format_html(input, matches)
+      }
   }
   write_output(output, matches)
 }

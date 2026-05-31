@@ -1,14 +1,15 @@
 ---
 name: portable-html
-description: Use this when a user asks to format, sanitize, inspect, outline, audit links, extract clean text, or convert local HTML to Markdown using moonrun and the bundled portable htmlfmt WASM artifact from this skill.
+description: Use this when a user asks to format, sanitize, inspect, outline, audit links, extract clean text, select nodes with CSS selectors, or convert local HTML to Markdown using moonrun and the bundled portable htmlfmt WASM artifact from this skill.
 ---
 
 # Portable HTML
 
 Use this skill to format, inspect, and convert WASI-visible HTML files without a
 native HTML toolchain. It is best for agent workflows that need quick page
-triage, metadata extraction, link review, basic accessibility hints, clean text,
-Markdown, or normalized HTML before further processing.
+triage, metadata extraction, CSS selector extraction, link review, basic
+accessibility hints, clean text, Markdown, or normalized HTML before further
+processing.
 
 ## Quick Start
 
@@ -41,6 +42,13 @@ moonrun /path/to/portable-html/assets/htmlfmt.wasm \
   --markdown --file page.html
 ```
 
+Extract selected links as JSON:
+
+```sh
+moonrun /path/to/portable-html/assets/htmlfmt.wasm \
+  --select 'main a[href]' --json --document --file page.html
+```
+
 Sanitize and compact untrusted HTML:
 
 ```sh
@@ -57,8 +65,10 @@ moonrun /path/to/portable-html/assets/htmlfmt.wasm \
 3. Use `--json` with `--inspect` when another tool should consume the report.
 4. Use `--text` for concise summaries, search snippets, or prompt context.
 5. Use `--markdown` when preserving headings, lists, links, and emphasis matters.
-6. Use `--sanitize` before formatting untrusted fragments.
-7. Use `--limit N` to keep inspection output concise.
+6. Use `--select CSS` to pull focused pieces out of larger pages before
+   rendering as HTML, text, Markdown, or JSON.
+7. Use `--sanitize` before formatting untrusted fragments.
+8. Use `--limit N` to keep inspection or selector output concise.
 
 ## Useful Options
 
@@ -67,6 +77,7 @@ moonrun /path/to/portable-html/assets/htmlfmt.wasm \
 - `--text`: write clean block-oriented text.
 - `--markdown`: convert the parsed HTML to Markdown.
 - `--html-passthrough`: with `--markdown`, preserve unsupported source HTML.
+- `--select CSS`: extract matching nodes before rendering.
 - `--document`: parse as a full document instead of a fragment.
 - `--sanitize`: apply the default sanitizer before formatting or inspection.
 - `--compact`: write compact normalized HTML.
