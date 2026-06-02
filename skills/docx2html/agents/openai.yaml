@@ -1,0 +1,4 @@
+interface:
+  display_name: "DOCX to HTML"
+  short_description: "Convert DOCX to HTML or Markdown with MoonBit"
+  default_prompt: "Use $docx2html to convert a local DOCX file to HTML or Markdown."

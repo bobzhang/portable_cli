@@ -103,12 +103,12 @@ Markdown page with a CLI flag summary, fixtures, and checked transcripts;
 `wasm_cli.md` is the suite index.
 
 The command tests invoke packages with `moon run --target wasm` instead of
-native `.exe` binaries, and the skill test invokes its bundled `.wasm` with
-`moonrun`.
+native `.exe` binaries. Skill tests either invoke bundled `.wasm` artifacts with
+`moonrun` or exercise a native wrapper script directly.
 
 ## Codex Skill
 
-This repo also includes prototype Codex skills under `skills/`. They bundle
+This repo also includes prototype Codex skills under `skills/`. Most bundle
 release WASM artifacts and run through `moonrun`, so the agent does not need a
 MoonBit build step:
 
@@ -135,4 +135,12 @@ moonrun skills/portable-pdf/assets/pdfskill.wasm forms input.pdf
 moonrun skills/portable-pdf/assets/pdfskill.wasm attachments --extract-dir attachments input.pdf
 moonrun skills/portable-svg/assets/svgcheck.wasm --fail-on high --file icon.svg
 moonrun skills/portable-toml/assets/tomlskill.wasm --get package.version --raw --file config.toml
+```
+
+The `docx2html` skill wraps the native MoonBit `bobzhang/docx2html` package and
+caches the installed converter on first use:
+
+```sh
+skills/docx2html/scripts/docx2html.sh input.docx > output.html
+skills/docx2html/scripts/docx2html.sh --output-format=markdown input.docx > output.md
 ```
