@@ -172,7 +172,7 @@ $ moon -C "$TESTDIR/../.." run --target wasm cmd/tomlskill -- --file tests/cram/
 The portable I/O surface can write normalized config to guest-visible paths.
 
 ```mooncram
-$ root="$TESTDIR/../.."; out=".tmp/moon-cram-tomlskill-out.toml"; rm -f "$root/$out"; moon -C "$root" run --target wasm cmd/tomlskill -- --file tests/cram/fixtures/toml/project.toml --section issues --output "$out"; cat "$root/$out"; rm -f "$root/$out"
+$ root="$TESTDIR/../.."; mkdir -p "$root/.tmp"; out=".tmp/moon-cram-tomlskill-out.toml"; rm -f "$root/$out"; moon -C "$root" run --target wasm cmd/tomlskill -- --file tests/cram/fixtures/toml/project.toml --section issues --output "$out"; cat "$root/$out"; rm -f "$root/$out"
 ## Issues
 
 | severity | line | message |

@@ -122,7 +122,7 @@ $ moon -C "$TESTDIR/../.." run --target wasm cmd/mdskill -- --file tests/cram/fi
 The portable I/O surface can write reports to guest-visible paths.
 
 ```mooncram
-$ root="$TESTDIR/../.."; out=".tmp/moon-cram-mdskill-out.md"; rm -f "$root/$out"; moon -C "$root" run --target wasm cmd/mdskill -- --file tests/cram/fixtures/markdown/agent-note.md --section issues --output "$out"; cat "$root/$out"; rm -f "$root/$out"
+$ root="$TESTDIR/../.."; mkdir -p "$root/.tmp"; out=".tmp/moon-cram-mdskill-out.md"; rm -f "$root/$out"; moon -C "$root" run --target wasm cmd/mdskill -- --file tests/cram/fixtures/markdown/agent-note.md --section issues --output "$out"; cat "$root/$out"; rm -f "$root/$out"
 ## Issues
 
 | severity | line | message |

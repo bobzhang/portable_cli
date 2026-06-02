@@ -64,7 +64,7 @@ $ moon -C "$TESTDIR/../.." run --target wasm cmd/jqlet -- --file tests/cram/fixt
 Use `--output` when another step should read the extracted or formatted JSON.
 
 ```mooncram
-$ root="$TESTDIR/../.."; out=".tmp/moon-cram-jqlet.json"; rm -f "$root/$out"; moon -C "$root" run --target wasm cmd/jqlet -- --file tests/cram/fixtures/json/items.json --get ok --compact --output "$out"; cat "$root/$out"; rm -f "$root/$out"
+$ root="$TESTDIR/../.."; mkdir -p "$root/.tmp"; out=".tmp/moon-cram-jqlet.json"; rm -f "$root/$out"; moon -C "$root" run --target wasm cmd/jqlet -- --file tests/cram/fixtures/json/items.json --get ok --compact --output "$out"; cat "$root/$out"; rm -f "$root/$out"
 true
 ```
 
