@@ -220,7 +220,7 @@ This example formats a checked fixture and writes the generated output under the
 repository `.tmp` directory.
 
 ```mooncram
-$ root="$TESTDIR/../.."; out=".tmp/moon-cram-htmlfmt-out.html"; rm -f "$root/$out"; moon -C "$root" run --target wasm cmd/htmlfmt -- --file tests/cram/fixtures/html/fragment.html --output "$out"; cat "$root/$out"; rm -f "$root/$out"
+$ root="$TESTDIR/../.."; mkdir -p "$root/.tmp"; out=".tmp/moon-cram-htmlfmt-out.html"; rm -f "$root/$out"; moon -C "$root" run --target wasm cmd/htmlfmt -- --file tests/cram/fixtures/html/fragment.html --output "$out"; cat "$root/$out"; rm -f "$root/$out"
 <article>
   <p>Hello <b>MoonBit</b></p>
 </article>

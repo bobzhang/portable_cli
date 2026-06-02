@@ -680,7 +680,7 @@ $ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/embedded-file.pdf"; moon -
 ```
 
 ```mooncram
-$ root="$TESTDIR/../.."; fixture="tests/cram/fixtures/embedded-file.pdf"; rm -rf "$root/.tmp/pdfskill-attachments"; moon -C "$root" run --target wasm cmd/pdfskill -- attachments --extract-dir .tmp/pdfskill-attachments "$fixture"; printf '%s\n' "$(cat "$root/.tmp/pdfskill-attachments/hello.txt")"; rm -rf "$root/.tmp/pdfskill-attachments"
+$ root="$TESTDIR/../.."; mkdir -p "$root/.tmp"; fixture="tests/cram/fixtures/embedded-file.pdf"; rm -rf "$root/.tmp/pdfskill-attachments"; moon -C "$root" run --target wasm cmd/pdfskill -- attachments --extract-dir .tmp/pdfskill-attachments "$fixture"; printf '%s\n' "$(cat "$root/.tmp/pdfskill-attachments/hello.txt")"; rm -rf "$root/.tmp/pdfskill-attachments"
 # PDF Attachments
 
 - path: `tests/cram/fixtures/embedded-file.pdf`
