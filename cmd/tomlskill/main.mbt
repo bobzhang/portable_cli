@@ -389,8 +389,8 @@ fn analyze(text : String) -> TomlReport {
     keys: [],
     issues: [],
   }
-  let seen_tables : Map[String, Int] = {}
-  let seen_keys : Map[String, Int] = {}
+  let seen_tables : Map[String, Int] = Map([])
+  let seen_keys : Map[String, Int] = Map([])
   let mut current_table = ""
   let mut current_table_line = 0
   let mut current_table_array = false
