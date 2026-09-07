@@ -127,7 +127,7 @@ fn add_word(
 
 ///|
 fn count_words(text : String, lowercase : Bool) -> Map[String, Int] {
-  let words : Map[String, Int] = {}
+  let words : Map[String, Int] = Map([])
   let current = StringBuilder()
   for ch in text {
     if word_char(ch) {
