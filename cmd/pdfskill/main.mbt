@@ -737,7 +737,7 @@ fn read_pdf_bytes(path : String) -> Bytes {
 
 ///|
 fn read_pdf_input(path : String) -> PdfInput {
-  { path, data: read_pdf_bytes(path) }
+  { path, data: read_pdf_bytes(path), }
 }
 
 ///|
@@ -849,7 +849,7 @@ fn scan_objects(data : BytesView, limit : Int) -> Array[PdfObjectHit] {
             let obj_end = obj_start + object_token.length()
             if match_at(data, obj_start, object_token) &&
               token_boundary_after(data, obj_end) {
-              hits.push({ number, generation, offset: index })
+              hits.push({ number, generation, offset: index, })
               index = obj_end
             } else {
               index += 1

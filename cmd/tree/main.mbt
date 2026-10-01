@@ -114,7 +114,7 @@ fn collect_children(
     let child_path = path_join(path, name)
     let is_dir = @miniio.is_dir(child_path) catch { _ => false }
     if !dirs_only || is_dir {
-      children.push(Entry::{ name, path: child_path, is_dir })
+      children.push(Entry::{ name, path: child_path, is_dir, })
     }
   }
   children

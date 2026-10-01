@@ -445,7 +445,7 @@ fn push_issue(
   message : String,
 ) -> Unit {
   if issues.length() < limit {
-    issues.push(HtmlIssue::{ severity, message })
+    issues.push(HtmlIssue::{ severity, message, })
   }
 }
 
@@ -508,7 +508,7 @@ fn add_meta(
   value : String,
 ) -> Unit {
   if metadata.length() < limit {
-    metadata.push(MetaItem::{ key, value })
+    metadata.push(MetaItem::{ key, value, })
   }
 }
 
@@ -536,7 +536,7 @@ fn walk_report(
       let name = node.name().to_lower()
       let level = heading_level(name)
       if level > 0 && report.headings.length() < limit {
-        report.headings.push(Heading::{ level, text: clean_text(node.text()) })
+        report.headings.push(Heading::{ level, text: clean_text(node.text()), })
       } else if name == "a" {
         match attr(node, "href") {
           Some(href) if href != "" => {

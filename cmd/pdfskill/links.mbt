@@ -28,7 +28,11 @@ fn append_links_from_object(
     let value_start = skip_spaces(view, found + uri_token.length())
     match parse_pdf_string_at(view, value_start) {
       Some((target, _)) =>
-        links.push(PdfLinkSummary::{ object_number, target, note: "uri-action" })
+        links.push(PdfLinkSummary::{
+          object_number,
+          target,
+          note: "uri-action",
+        })
       None => ()
     }
     index = found + uri_token.length()

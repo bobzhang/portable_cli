@@ -143,7 +143,7 @@ fn form_summaries(input : PdfInput, limit : Int) -> PdfFormsSummary {
       None => ()
     }
   }
-  { path: input.path, acroform_objects, xfa_objects, fields_found, fields }
+  { path: input.path, acroform_objects, xfa_objects, fields_found, fields, }
 }
 
 ///|

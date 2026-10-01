@@ -174,7 +174,7 @@ fn action_summaries(input : PdfInput, limit : Int) -> PdfActionsSummary {
       None => ()
     }
   }
-  { path: input.path, actions_found, actions }
+  { path: input.path, actions_found, actions, }
 }
 
 ///|

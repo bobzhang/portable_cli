@@ -245,7 +245,7 @@ fn push_issue(
   line : Int,
   message : String,
 ) -> Unit {
-  issues.push(SvgIssue::{ severity, line, message })
+  issues.push(SvgIssue::{ severity, line, message, })
 }
 
 ///|
@@ -350,7 +350,7 @@ fn analyze(text : String) -> SvgSummary {
 fn tag_counts(summary : SvgSummary) -> Array[TagCount] {
   let counts : Array[TagCount] = []
   for entry in summary.tags.to_array() {
-    counts.push(TagCount::{ name: entry.0, count: entry.1 })
+    counts.push(TagCount::{ name: entry.0, count: entry.1, })
   }
   counts.sort_by((left, right) => {
     let by_count = right.count.compare(left.count)

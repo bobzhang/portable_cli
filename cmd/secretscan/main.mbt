@@ -315,7 +315,7 @@ fn collect_children(path : String, options : ScanOptions) -> Array[FileEntry] {
     let child_path = path_join(path, name)
     let is_dir = @miniio.is_dir(child_path) catch { _ => false }
     let is_file = @miniio.is_file(child_path) catch { _ => false }
-    entries.push(FileEntry::{ path: child_path, is_dir, is_file })
+    entries.push(FileEntry::{ path: child_path, is_dir, is_file, })
   }
   entries.sort_by((left, right) => {
     left.path.to_lower().compare(right.path.to_lower())
@@ -425,7 +425,7 @@ fn add_finding(
   evidence : String,
 ) -> Unit {
   if findings.length() < options.limit {
-    findings.push(Finding::{ path, line, severity, rule, evidence })
+    findings.push(Finding::{ path, line, severity, rule, evidence, })
   }
 }
 
