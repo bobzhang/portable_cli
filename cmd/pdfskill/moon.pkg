@@ -13,6 +13,4 @@ import {
 
 supported_targets = "wasm"
 
-options(
-  is_main: true,
-)
+pkgtype(kind: "executable")

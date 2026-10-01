@@ -76,7 +76,7 @@ fn image_summaries(
       None => ()
     }
   }
-  { path: input.path, images_found, images }
+  { path: input.path, images_found, images, }
 }
 
 ///|

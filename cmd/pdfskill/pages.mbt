@@ -120,7 +120,7 @@ fn page_summaries(input : PdfInput, limit : Int) -> PdfPagesSummary {
       None => ()
     }
   }
-  { path: input.path, pages_found, pages }
+  { path: input.path, pages_found, pages, }
 }
 
 ///|

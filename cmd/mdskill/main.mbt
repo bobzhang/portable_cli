@@ -272,7 +272,7 @@ fn heading_from_line(line : String, line_no : Int) -> Heading? {
       if text.is_empty() {
         None
       } else {
-        Some(Heading::{ line: line_no, level, text, slug: slugify(text) })
+        Some(Heading::{ line: line_no, level, text, slug: slugify(text), })
       }
     }
     _ => None
@@ -326,7 +326,7 @@ fn collect_links(line : String, line_no : Int, links : Array[LinkItem]) -> Unit 
     if !is_image {
       let text = line[open + 1:close_text].to_owned()
       let target = line[close_text + 2:close_target].to_owned()
-      links.push(LinkItem::{ line: line_no, text, target })
+      links.push(LinkItem::{ line: line_no, text, target, })
     }
     pos = close_target + 1
   }
@@ -341,7 +341,7 @@ fn frontmatter_item(line : String) -> FrontMatterItem? {
       if key.is_empty() {
         None
       } else {
-        Some(FrontMatterItem::{ key, value })
+        Some(FrontMatterItem::{ key, value, })
       }
     }
     _ => None
@@ -372,7 +372,7 @@ fn push_issue(
   line : Int,
   message : String,
 ) -> Unit {
-  issues.push(MarkdownIssue::{ severity, line, message })
+  issues.push(MarkdownIssue::{ severity, line, message, })
 }
 
 ///|

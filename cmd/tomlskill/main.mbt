@@ -246,7 +246,7 @@ fn push_issue(
   line : Int,
   message : String,
 ) -> Unit {
-  issues.push(TomlIssue::{ severity, line, message })
+  issues.push(TomlIssue::{ severity, line, message, })
 }
 
 ///|
@@ -261,7 +261,7 @@ fn parse_table(
       push_issue(issues, "medium", line_no, "empty array table name")
       None
     } else {
-      Some(TomlTable::{ line: line_no, name, array: true })
+      Some(TomlTable::{ line: line_no, name, array: true, })
     }
   } else if line.has_prefix("[") && line.has_suffix("]") {
     let name = line[1:line.length() - 1].to_owned().trim().to_owned()
@@ -269,7 +269,7 @@ fn parse_table(
       push_issue(issues, "medium", line_no, "empty table name")
       None
     } else {
-      Some(TomlTable::{ line: line_no, name, array: false })
+      Some(TomlTable::{ line: line_no, name, array: false, })
     }
   } else {
     None

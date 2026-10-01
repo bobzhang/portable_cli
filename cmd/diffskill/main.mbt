@@ -147,7 +147,7 @@ fn plus_path(line : String) -> String? {
 
 ///|
 fn new_file(path : String) -> DiffFile {
-  DiffFile::{ path, additions: 0, deletions: 0, hunks: 0, binary: false }
+  DiffFile::{ path, additions: 0, deletions: 0, hunks: 0, binary: false, }
 }
 
 ///|

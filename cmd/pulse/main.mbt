@@ -144,7 +144,7 @@ fn count_words(text : String, lowercase : Bool) -> Map[String, Int] {
 fn sorted_counts(words : Map[String, Int]) -> Array[WordCount] {
   let items : Array[WordCount] = []
   for entry in words.to_array() {
-    items.push(WordCount::{ word: entry.0, count: entry.1 })
+    items.push(WordCount::{ word: entry.0, count: entry.1, })
   }
   items.sort_by((left, right) => {
     let by_count = right.count.compare(left.count)
