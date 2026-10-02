@@ -1,5 +1,7 @@
 # portable_cli
 
+> **Deprecated.** This module is no longer maintained: `moonbitlang/async` is portable across targets, so `moonbit-community/miniio` (which these programs use) is no longer needed. Use `moonbitlang/async` for portable I/O.
+
 Small MoonBit WASIp1 command-line programs that use
 `moonbit-community/miniio` for portable I/O and `moonbitlang/core/argparse` for
 declarative CLI parsing.
