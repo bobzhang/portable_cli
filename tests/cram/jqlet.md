@@ -83,7 +83,7 @@ $ root="$TESTDIR/../.."; (cd "$root" && moonrun skills/portable-jqlet/assets/jql
 Unknown flags fail through the shared `@argparse` error path.
 
 ```mooncram
-$ moon -C "$TESTDIR/../.." run --target wasm cmd/jqlet -- --bad > unknown.out 2> unknown.err; sed -n '1,4p' unknown.err; test ! -s unknown.out
+$ moon -C "$TESTDIR/../.." run --target wasm cmd/jqlet -- --bad > unknown.out 2> unknown.err; grep -v '^Warning: ' unknown.err | sed -n '1,4p'; test ! -s unknown.out
 error: unexpected argument '--bad' found
 
 Usage: jqlet [options]

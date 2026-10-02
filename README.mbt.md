@@ -21,7 +21,7 @@ declarative CLI parsing.
 - `cmd/mdskill`: Markdown structure inspector. It summarizes front matter,
   headings, links, task list items, code fences, and structural issues as
   Markdown or JSON.
-- `cmd/pdfskill`: portable PDF tooling built on small `bobzhang/pdflite`
+- `cmd/pdfskill`: portable PDF tooling built on small `moonbitlang/pdflite`
   packages. It reports structure/risk signals, maps pages, inspects objects and
   streams, inventories images and actions, extracts lightweight metadata, text,
   links, forms, and attachments, and can create a simple one-page text PDF.

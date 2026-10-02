@@ -978,7 +978,7 @@ fn object_kind(object : @syntax.PdfObject) -> String {
     PdfNull => "null"
     PdfBoolean(_) => "bool"
     PdfInteger(_) => "int"
-    PdfReal(_) => "real"
+    PdfReal(_) | PdfExactReal(_) => "real"
     PdfString(_) => "string"
     PdfNameObject(_) => "name"
     PdfArray(_) => "array"
