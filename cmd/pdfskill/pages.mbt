@@ -4,7 +4,7 @@ fn page_value_text(object : @syntax.PdfObject) -> String {
     PdfNull => "null"
     PdfBoolean(value) => if value { "true" } else { "false" }
     PdfInteger(value) => value.to_string()
-    PdfReal(value) => value.to_string()
+    PdfReal(value) | PdfExactReal(value) => value.to_string()
     PdfString(bytes) => pdf_string_text(bytes)
     PdfNameObject(name) => pdf_name_text(name)
     PdfIndirect(number) => "ref:\{number}"

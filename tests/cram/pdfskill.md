@@ -1,7 +1,7 @@
 # Portable PDF Skill CLI
 
 `cmd/pdfskill` is a lightweight PDF triage tool for portable agent skills. It
-uses `bobzhang/pdflite/reader` for header and `startxref` parsing, then reports
+uses `moonbitlang/pdflite/reader` for header and `startxref` parsing, then reports
 byte-level object and risk signals that are useful before handing a file to a
 heavier PDF renderer or extractor.
 

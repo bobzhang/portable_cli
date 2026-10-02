@@ -1,13 +1,12 @@
 import {
-  "bobzhang/pdflite/codec",
-  "bobzhang/pdflite/core",
-  "bobzhang/pdflite/flate",
-  "bobzhang/pdflite/reader",
-  "bobzhang/pdflite/syntax",
+  "moonbitlang/pdflite/codec",
+  "moonbitlang/pdflite/core",
+  "moonbitlang/pdflite/flate",
+  "moonbitlang/pdflite/reader",
+  "moonbitlang/pdflite/syntax",
   "moonbit-community/miniio",
   "moonbitlang/core/argparse",
   "moonbitlang/core/encoding/utf8",
-  "moonbitlang/core/json",
   "moonbitlang/core/string",
 }
 
