@@ -54,7 +54,7 @@ fn is_image_stream(dict : @syntax.PdfObject) -> Bool {
 ///|
 fn image_summaries(
   input : PdfInput,
-  limit : Int,
+  limit : Int32,
   decode : Bool,
 ) -> PdfImagesSummary {
   let cap = if limit < 0 { 0 } else { limit }
@@ -97,7 +97,7 @@ fn image_summary_json(image : PdfImageSummary) -> Json {
 ///|
 fn images_json(
   summary : PdfImagesSummary,
-  limit : Int,
+  limit : Int32,
   decode : Bool,
 ) -> String {
   Json::object({
@@ -118,7 +118,7 @@ fn images_json(
 ///|
 fn images_markdown(
   summary : PdfImagesSummary,
-  limit : Int,
+  limit : Int32,
   decode : Bool,
 ) -> String {
   let mut out =
@@ -145,7 +145,7 @@ fn images_markdown(
 ///|
 fn run_images(
   input : String,
-  limit : Int,
+  limit : Int32,
   decode : Bool,
   as_json : Bool,
 ) -> Unit {

@@ -1,8 +1,8 @@
 ///|
 struct PdfObjectHit {
-  number : Int
-  generation : Int
-  offset : Int
+  number : Int32
+  generation : Int32
+  offset : Int32
 }
 
 ///|
@@ -14,23 +14,23 @@ struct PdfInput {
 ///|
 struct PdfScan {
   path : String
-  input_bytes : Int
+  input_bytes : Int32
   version : String
-  startxref : Int
+  startxref : Int32
   object_hits : Array[PdfObjectHit]
-  eof_markers : Int
-  object_candidates : Int
-  page_candidates : Int
-  stream_candidates : Int
-  xref_tokens : Int
+  eof_markers : Int32
+  object_candidates : Int32
+  page_candidates : Int32
+  stream_candidates : Int32
+  xref_tokens : Int32
   encrypted : Bool
-  javascript : Int
-  active_actions : Int
-  embedded_files : Int
+  javascript : Int32
+  active_actions : Int32
+  embedded_files : Int32
   acroform : Bool
   xfa : Bool
-  images : Int
-  object_streams : Int
+  images : Int32
+  object_streams : Int32
   linearized : Bool
 }
 
@@ -48,8 +48,8 @@ struct PdfObjectSummary {
 
 ///|
 struct PdfPageSummary {
-  page_number : Int
-  object_number : Int
+  page_number : Int32
+  object_number : Int32
   media_box : String
   rotate : String
   contents : String
@@ -61,15 +61,15 @@ struct PdfPageSummary {
 ///|
 struct PdfPagesSummary {
   path : String
-  pages_found : Int
+  pages_found : Int32
   pages : Array[PdfPageSummary]
 }
 
 ///|
 struct PdfStreamSummary {
   object : PdfObjectSummary
-  raw_start : Int
-  raw_bytes : Int
+  raw_start : Int32
+  raw_bytes : Int32
   decoded_bytes : String
   decode_status : String
   preview : String
@@ -77,20 +77,20 @@ struct PdfStreamSummary {
 
 ///|
 struct PdfImageSummary {
-  object_number : Int
+  object_number : Int32
   width : String
   height : String
   color_space : String
   bits_per_component : String
   filters : String
-  raw_bytes : Int
+  raw_bytes : Int32
   decoded_bytes : String
   note : String
 }
 
 ///|
 struct PdfActionSummary {
-  object_number : Int
+  object_number : Int32
   trigger : String
   action_type : String
   target : String
@@ -101,21 +101,21 @@ struct PdfActionSummary {
 ///|
 struct PdfActionsSummary {
   path : String
-  actions_found : Int
+  actions_found : Int32
   actions : Array[PdfActionSummary]
 }
 
 ///|
 struct PdfImagesSummary {
   path : String
-  images_found : Int
+  images_found : Int32
   images : Array[PdfImageSummary]
 }
 
 ///|
 struct PdfMetadataSummary {
   path : String
-  info_objects : Int
+  info_objects : Int32
   title : String
   author : String
   subject : String
@@ -124,25 +124,25 @@ struct PdfMetadataSummary {
   producer : String
   creation_date : String
   mod_date : String
-  xmp_objects : Int
+  xmp_objects : Int32
   xmp_preview : String
 }
 
 ///|
 struct PdfTextSummary {
   path : String
-  streams_scanned : Int
-  fragments : Int
-  extracted_chars : Int
+  streams_scanned : Int32
+  fragments : Int32
+  extracted_chars : Int32
   text : String
 }
 
 ///|
 struct PdfAttachmentSummary {
   name : String
-  filespec_object : Int
-  embedded_object : Int
-  raw_bytes : Int
+  filespec_object : Int32
+  embedded_object : Int32
+  raw_bytes : Int32
   decoded_bytes : String
   filters : String
   extracted_path : String
@@ -151,14 +151,14 @@ struct PdfAttachmentSummary {
 
 ///|
 struct PdfLinkSummary {
-  object_number : Int
+  object_number : Int32
   target : String
   note : String
 }
 
 ///|
 struct PdfFormFieldSummary {
-  object_number : Int
+  object_number : Int32
   field_type : String
   name : String
   value : String
@@ -170,9 +170,9 @@ struct PdfFormFieldSummary {
 ///|
 struct PdfFormsSummary {
   path : String
-  acroform_objects : Int
-  xfa_objects : Int
-  fields_found : Int
+  acroform_objects : Int32
+  xfa_objects : Int32
+  fields_found : Int32
   fields : Array[PdfFormFieldSummary]
 }
 
@@ -180,22 +180,22 @@ struct PdfFormsSummary {
 enum PdfSkillCommand {
   Brief(String, Bool, String?)
   Doctor(String)
-  Map(String, Int)
-  Pages(String, Int, Bool)
-  Objects(String, Int, String?, Bool)
-  Streams(String, Int, Bool, Int, Bool)
-  Images(String, Int, Bool, Bool)
-  Actions(String, Int, Bool)
-  Metadata(String, Int, Bool)
-  Text(String, Int, Bool)
-  Attachments(String, Int, String?, Bool)
-  Links(String, Int, Bool)
-  Forms(String, Int, Bool)
+  Map(String, Int32)
+  Pages(String, Int32, Bool)
+  Objects(String, Int32, String?, Bool)
+  Streams(String, Int32, Bool, Int32, Bool)
+  Images(String, Int32, Bool, Bool)
+  Actions(String, Int32, Bool)
+  Metadata(String, Int32, Bool)
+  Text(String, Int32, Bool)
+  Attachments(String, Int32, String?, Bool)
+  Links(String, Int32, Bool)
+  Forms(String, Int32, Bool)
   MakeText(String?, String, String, Array[String])
 }
 
 ///|
-fn[T] die(message : String, code : Int) -> T {
+fn[T] die(message : String, code : Int32) -> T {
   @miniio.stderr.write_text(message + "\n") catch {
     _ => ()
   }
@@ -713,7 +713,11 @@ fn value(
 }
 
 ///|
-fn int_value(matches : @argparse.Matches, name : String, fallback : Int) -> Int {
+fn int_value(
+  matches : @argparse.Matches,
+  name : String,
+  fallback : Int32,
+) -> Int32 {
   let raw = value(matches, name, fallback.to_string())
   @string.parse_int(raw) catch {
     _ => die("pdfskill: invalid integer for --\{name}: \{raw}", 2)
@@ -741,7 +745,7 @@ fn read_pdf_input(path : String) -> PdfInput {
 }
 
 ///|
-fn match_at(data : BytesView, offset : Int, needle : BytesView) -> Bool {
+fn match_at(data : BytesView, offset : Int32, needle : BytesView) -> Bool {
   if offset < 0 || offset + needle.length() > data.length() {
     return false
   }
@@ -754,7 +758,7 @@ fn match_at(data : BytesView, offset : Int, needle : BytesView) -> Bool {
 }
 
 ///|
-fn count_occurrences(data : BytesView, pattern : String) -> Int {
+fn count_occurrences(data : BytesView, pattern : String) -> Int32 {
   let needle = @utf8.encode(pattern)
   let mut count = 0
   let mut index = 0
@@ -775,7 +779,7 @@ fn is_pdf_name_body(byte : Byte) -> Bool {
 }
 
 ///|
-fn count_pdf_name(data : BytesView, name : String) -> Int {
+fn count_pdf_name(data : BytesView, name : String) -> Int32 {
   let needle = @utf8.encode(name)
   let mut count = 0
   let mut index = 0
@@ -794,7 +798,7 @@ fn count_pdf_name(data : BytesView, name : String) -> Int {
 }
 
 ///|
-fn parse_uint_at(data : BytesView, start : Int) -> (Int, Int)? {
+fn parse_uint_at(data : BytesView, start : Int32) -> (Int32, Int32)? {
   if start >= data.length() || !@core.pdf_is_digit_byte(data[start].to_int()) {
     return None
   }
@@ -808,7 +812,7 @@ fn parse_uint_at(data : BytesView, start : Int) -> (Int, Int)? {
 }
 
 ///|
-fn skip_spaces(data : BytesView, start : Int) -> Int {
+fn skip_spaces(data : BytesView, start : Int32) -> Int32 {
   let mut index = start
   while index < data.length() &&
         @core.pdf_is_whitespace_byte(data[index].to_int()) {
@@ -818,19 +822,19 @@ fn skip_spaces(data : BytesView, start : Int) -> Int {
 }
 
 ///|
-fn token_boundary_before(data : BytesView, index : Int) -> Bool {
+fn token_boundary_before(data : BytesView, index : Int32) -> Bool {
   index == 0 ||
   @core.pdf_is_whitespace_or_delimiter_byte(data[index - 1].to_int())
 }
 
 ///|
-fn token_boundary_after(data : BytesView, index : Int) -> Bool {
+fn token_boundary_after(data : BytesView, index : Int32) -> Bool {
   index >= data.length() ||
   @core.pdf_is_whitespace_or_delimiter_byte(data[index].to_int())
 }
 
 ///|
-fn scan_objects(data : BytesView, limit : Int) -> Array[PdfObjectHit] {
+fn scan_objects(data : BytesView, limit : Int32) -> Array[PdfObjectHit] {
   let hits : Array[PdfObjectHit] = []
   let object_token = @utf8.encode("obj")
   let cap = if limit < 0 { 0 } else { limit }
@@ -865,14 +869,14 @@ fn scan_objects(data : BytesView, limit : Int) -> Array[PdfObjectHit] {
 }
 
 ///|
-fn object_scan_limit() -> Int {
+fn object_scan_limit() -> Int32 {
   1000000
 }
 
 ///|
 fn limit_object_hits(
   hits : Array[PdfObjectHit],
-  limit : Int,
+  limit : Int32,
 ) -> Array[PdfObjectHit] {
   let cap = if limit < 0 {
     0
@@ -930,7 +934,11 @@ fn scan_pdf(input : PdfInput) -> PdfScan {
 }
 
 ///|
-fn find_occurrence_from(data : BytesView, start : Int, pattern : String) -> Int {
+fn find_occurrence_from(
+  data : BytesView,
+  start : Int32,
+  pattern : String,
+) -> Int32 {
   let needle = @utf8.encode(pattern)
   let mut index = if start < 0 { 0 } else { start }
   while index + needle.length() <= data.length() {
@@ -953,7 +961,7 @@ fn pdf_name_text(name : @core.PdfName) -> String {
 }
 
 ///|
-fn object_end_offset(data : BytesView, hit : PdfObjectHit) -> Int {
+fn object_end_offset(data : BytesView, hit : PdfObjectHit) -> Int32 {
   let endobj = find_occurrence_from(data, hit.offset, "endobj")
   if endobj < 0 {
     -1
@@ -1209,7 +1217,7 @@ fn summary_contains(
 ///|
 fn object_summaries(
   input : PdfInput,
-  limit : Int,
+  limit : Int32,
   contains : String?,
 ) -> Array[PdfObjectSummary] {
   let cap = if limit < 0 { 0 } else { limit }
@@ -1230,7 +1238,7 @@ fn object_summaries(
 }
 
 ///|
-fn skip_stream_newline(view : BytesView, start : Int) -> Int {
+fn skip_stream_newline(view : BytesView, start : Int32) -> Int32 {
   if start < view.length() && view[start] == b'\r' {
     if start + 1 < view.length() && view[start + 1] == b'\n' {
       start + 2
@@ -1245,7 +1253,11 @@ fn skip_stream_newline(view : BytesView, start : Int) -> Int {
 }
 
 ///|
-fn trim_stream_end_newline(view : BytesView, start : Int, end : Int) -> Int {
+fn trim_stream_end_newline(
+  view : BytesView,
+  start : Int32,
+  end : Int32,
+) -> Int32 {
   let mut finish = end
   if finish > start && view[finish - 1] == b'\n' {
     finish -= 1
@@ -1259,7 +1271,7 @@ fn trim_stream_end_newline(view : BytesView, start : Int, end : Int) -> Int {
 }
 
 ///|
-fn stream_declared_length(summary : PdfObjectSummary) -> Int? {
+fn stream_declared_length(summary : PdfObjectSummary) -> Int32? {
   let value = @string.parse_int(summary.length) catch { _ => return None }
   Some(value)
 }
@@ -1268,7 +1280,7 @@ fn stream_declared_length(summary : PdfObjectSummary) -> Int? {
 fn stream_raw_view(
   input : PdfInput,
   summary : PdfObjectSummary,
-) -> (BytesView, Int, String)? {
+) -> (BytesView, Int32, String)? {
   let object_view = match object_view(input, summary.hit) {
     Some(value) => value
     None => return None
@@ -1342,7 +1354,7 @@ fn decode_stream(raw : BytesView, filters : Array[String]) -> (Bytes?, String) {
 }
 
 ///|
-fn preview_bytes(data : BytesView, max_bytes : Int) -> String {
+fn preview_bytes(data : BytesView, max_bytes : Int32) -> String {
   let cap = if max_bytes < 0 {
     0
   } else if max_bytes < data.length() {
@@ -1370,7 +1382,7 @@ fn stream_summary(
   input : PdfInput,
   object : PdfObjectSummary,
   decode : Bool,
-  max_bytes : Int,
+  max_bytes : Int32,
 ) -> PdfStreamSummary? {
   match stream_raw_view(input, object) {
     Some((raw, raw_start, status)) =>
@@ -1414,9 +1426,9 @@ fn stream_summary(
 ///|
 fn stream_summaries(
   input : PdfInput,
-  limit : Int,
+  limit : Int32,
   decode : Bool,
-  max_bytes : Int,
+  max_bytes : Int32,
 ) -> Array[PdfStreamSummary] {
   let cap = if limit < 0 { 0 } else { limit }
   let scan = scan_pdf(input)
@@ -1511,7 +1523,7 @@ fn is_xmp_metadata_object(
 }
 
 ///|
-fn metadata_summary(input : PdfInput, max_bytes : Int) -> PdfMetadataSummary {
+fn metadata_summary(input : PdfInput, max_bytes : Int32) -> PdfMetadataSummary {
   let scan = scan_pdf(input)
   let mut info_objects = 0
   let mut title = "-"
@@ -1597,12 +1609,15 @@ fn metadata_summary(input : PdfInput, max_bytes : Int) -> PdfMetadataSummary {
 }
 
 ///|
-fn is_octal_digit(value : Int) -> Bool {
+fn is_octal_digit(value : Int32) -> Bool {
   value >= b'0'.to_int() && value <= b'7'.to_int()
 }
 
 ///|
-fn parse_literal_pdf_string(data : BytesView, start : Int) -> (String, Int)? {
+fn parse_literal_pdf_string(
+  data : BytesView,
+  start : Int32,
+) -> (String, Int32)? {
   if start >= data.length() || data[start] != b'(' {
     return None
   }
@@ -1666,7 +1681,7 @@ fn parse_literal_pdf_string(data : BytesView, start : Int) -> (String, Int)? {
 }
 
 ///|
-fn parse_hex_pdf_string(data : BytesView, start : Int) -> (String, Int)? {
+fn parse_hex_pdf_string(data : BytesView, start : Int32) -> (String, Int32)? {
   if start >= data.length() || data[start] != b'<' {
     return None
   }
@@ -1675,7 +1690,7 @@ fn parse_hex_pdf_string(data : BytesView, start : Int) -> (String, Int)? {
   }
   let output : Array[Byte] = []
   let mut index = start + 1
-  let mut high : Int? = None
+  let mut high : Int32? = None
   while index < data.length() {
     if data[index] == b'>' {
       match high {
@@ -1733,7 +1748,10 @@ fn append_text_fragment(current : String, fragment : String) -> String {
 }
 
 ///|
-fn stream_text_fragments(data : BytesView, remaining : Int) -> (String, Int) {
+fn stream_text_fragments(
+  data : BytesView,
+  remaining : Int32,
+) -> (String, Int32) {
   let mut text = ""
   let mut fragments = 0
   let mut index = 0
@@ -1776,7 +1794,7 @@ fn text_candidate_stream(summary : PdfObjectSummary) -> Bool {
 }
 
 ///|
-fn text_summary(input : PdfInput, max_chars : Int) -> PdfTextSummary {
+fn text_summary(input : PdfInput, max_chars : Int32) -> PdfTextSummary {
   let cap = if max_chars < 0 { 0 } else { max_chars }
   let scan = scan_pdf(input)
   let mut streams_scanned = 0
@@ -1852,7 +1870,7 @@ fn pdf_escape_literal(text : String) -> String {
 }
 
 ///|
-fn make_text_page_size(name : String) -> (Int, Int) {
+fn make_text_page_size(name : String) -> (Int32, Int32) {
   let normalized = name.to_lower()
   if normalized == "letter" {
     (612, 792)
@@ -1881,7 +1899,7 @@ fn make_text_lines(text : String) -> Array[String] {
 }
 
 ///|
-fn make_text_content(text : String, page_height : Int) -> String {
+fn make_text_content(text : String, page_height : Int32) -> String {
   let mut out = "BT\n/F1 12 Tf\n72 \{page_height - 72} Td\n16 TL\n"
   let lines = make_text_lines(text)
   for index in 0..<lines.length() {
@@ -1894,7 +1912,7 @@ fn make_text_content(text : String, page_height : Int) -> String {
 }
 
 ///|
-fn pdf_xref_offset(offset : Int) -> String {
+fn pdf_xref_offset(offset : Int32) -> String {
   offset.to_string().pad_start(10, '0') + " 00000 n \n"
 }
 
@@ -1903,7 +1921,7 @@ fn make_text_pdf(text : String, title : String, page_size : String) -> String {
   let (width, height) = make_text_page_size(page_size)
   let content = make_text_content(text, height)
   let mut pdf = "%PDF-1.4\n"
-  let offsets : Array[Int] = []
+  let offsets : Array[Int32] = []
   offsets.push(pdf.length())
   pdf += "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
   offsets.push(pdf.length())
@@ -1977,7 +1995,7 @@ fn startxref_text(scan : PdfScan) -> String {
 }
 
 ///|
-fn int_json(value : Int) -> Json {
+fn int_json(value : Int32) -> Json {
   Json::number(value.to_double(), repr=value.to_string())
 }
 
@@ -2104,7 +2122,7 @@ fn run_doctor(input : String) -> Unit {
 }
 
 ///|
-fn run_map(input : String, limit : Int) -> Unit {
+fn run_map(input : String, limit : Int32) -> Unit {
   let pdf = read_pdf_input(input)
   let scan = scan_pdf(pdf)
   let hits = limit_object_hits(scan.object_hits, limit)
@@ -2155,7 +2173,7 @@ fn contains_json(contains : String?) -> Json {
 ///|
 fn object_summaries_json(
   input : String,
-  limit : Int,
+  limit : Int32,
   contains : String?,
   summaries : Array[PdfObjectSummary],
 ) -> String {
@@ -2176,7 +2194,7 @@ fn object_summaries_json(
 ///|
 fn object_summaries_markdown(
   input : String,
-  limit : Int,
+  limit : Int32,
   contains : String?,
   summaries : Array[PdfObjectSummary],
 ) -> String {
@@ -2213,7 +2231,7 @@ fn object_summaries_markdown(
 ///|
 fn run_objects(
   input : String,
-  limit : Int,
+  limit : Int32,
   contains : String?,
   as_json : Bool,
 ) -> Unit {
@@ -2249,9 +2267,9 @@ fn stream_summary_json(summary : PdfStreamSummary) -> Json {
 ///|
 fn stream_summaries_json(
   input : String,
-  limit : Int,
+  limit : Int32,
   decode : Bool,
-  max_bytes : Int,
+  max_bytes : Int32,
   summaries : Array[PdfStreamSummary],
 ) -> String {
   Json::object({
@@ -2272,9 +2290,9 @@ fn stream_summaries_json(
 ///|
 fn stream_summaries_markdown(
   input : String,
-  limit : Int,
+  limit : Int32,
   decode : Bool,
-  max_bytes : Int,
+  max_bytes : Int32,
   summaries : Array[PdfStreamSummary],
 ) -> String {
   let mut out =
@@ -2301,9 +2319,9 @@ fn stream_summaries_markdown(
 ///|
 fn run_streams(
   input : String,
-  limit : Int,
+  limit : Int32,
   decode : Bool,
-  max_bytes : Int,
+  max_bytes : Int32,
   as_json : Bool,
 ) -> Unit {
   let summaries = stream_summaries(
@@ -2363,7 +2381,7 @@ fn metadata_markdown(summary : PdfMetadataSummary) -> String {
 }
 
 ///|
-fn run_metadata(input : String, max_bytes : Int, as_json : Bool) -> Unit {
+fn run_metadata(input : String, max_bytes : Int32, as_json : Bool) -> Unit {
   let summary = metadata_summary(read_pdf_input(input), max_bytes)
   let out = if as_json {
     metadata_json(summary)
@@ -2411,7 +2429,7 @@ fn text_markdown(summary : PdfTextSummary) -> String {
 }
 
 ///|
-fn run_text(input : String, max_chars : Int, as_json : Bool) -> Unit {
+fn run_text(input : String, max_chars : Int32, as_json : Bool) -> Unit {
   let summary = text_summary(read_pdf_input(input), max_chars)
   let out = if as_json { text_json(summary) } else { text_markdown(summary) }
   @miniio.stdout.write_text(out) catch {

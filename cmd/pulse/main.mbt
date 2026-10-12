@@ -1,11 +1,11 @@
 ///|
 struct WordCount {
   word : String
-  count : Int
+  count : Int32
 }
 
 ///|
-fn[T] die(message : String, code : Int) -> T {
+fn[T] die(message : String, code : Int32) -> T {
   @miniio.stderr.write_text(message + "\n") catch {
     _ => ()
   }
@@ -85,7 +85,11 @@ fn value(
 }
 
 ///|
-fn int_value(matches : @argparse.Matches, name : String, fallback : Int) -> Int {
+fn int_value(
+  matches : @argparse.Matches,
+  name : String,
+  fallback : Int32,
+) -> Int32 {
   @string.parse_int(value(matches, name, fallback.to_string())) catch {
     _ => fallback
   }
@@ -112,7 +116,7 @@ fn word_char(ch : Char) -> Bool {
 
 ///|
 fn add_word(
-  words : Map[String, Int],
+  words : Map[String, Int32],
   current : StringBuilder,
   lowercase : Bool,
 ) -> Unit {
@@ -126,8 +130,8 @@ fn add_word(
 }
 
 ///|
-fn count_words(text : String, lowercase : Bool) -> Map[String, Int] {
-  let words : Map[String, Int] = Map([])
+fn count_words(text : String, lowercase : Bool) -> Map[String, Int32] {
+  let words : Map[String, Int32] = Map([])
   let current = StringBuilder()
   for ch in text {
     if word_char(ch) {
@@ -141,7 +145,7 @@ fn count_words(text : String, lowercase : Bool) -> Map[String, Int] {
 }
 
 ///|
-fn sorted_counts(words : Map[String, Int]) -> Array[WordCount] {
+fn sorted_counts(words : Map[String, Int32]) -> Array[WordCount] {
   let items : Array[WordCount] = []
   for entry in words.to_array() {
     items.push(WordCount::{ word: entry.0, count: entry.1, })
@@ -158,7 +162,7 @@ fn sorted_counts(words : Map[String, Int]) -> Array[WordCount] {
 }
 
 ///|
-fn line_count(text : String) -> Int {
+fn line_count(text : String) -> Int32 {
   if text.is_empty() {
     return 0
   }
@@ -176,13 +180,18 @@ fn line_count(text : String) -> Int {
 }
 
 ///|
-fn render_bar(count : Int, max_count : Int, width : Int) -> String {
+fn render_bar(count : Int32, max_count : Int32, width : Int32) -> String {
   let n = if max_count == 0 { 0 } else { (count * width / max_count).max(1) }
   "#".repeat(n)
 }
 
 ///|
-fn render(text : String, lowercase : Bool, top : Int, width : Int) -> String {
+fn render(
+  text : String,
+  lowercase : Bool,
+  top : Int32,
+  width : Int32,
+) -> String {
   let words = count_words(text, lowercase)
   let items = sorted_counts(words)
   let max_count = match items.get(0) {

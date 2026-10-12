@@ -24,7 +24,7 @@ keywords = [ "cli", "wasm", "wasi", "portable", "miniio" ]
 description = "Portable MoonBit CLI examples that compile to WASIp1 and run across WASM runtimes."
 
 import {
-  "moonbit-community/miniio@0.2.0",
-  "bobzhang/html_parser@0.1.7",
+  "moonbit-community/miniio@0.2.1",
+  "bobzhang/html_parser@0.2.0",
   "moonbitlang/pdflite@0.3.2",
 }

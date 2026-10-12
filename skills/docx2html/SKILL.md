@@ -60,7 +60,7 @@ skills/docx2html/scripts/docx2html.sh \
 ## Caveats
 
 This is a native MoonBit CLI skill, not a bundled Wasm `moonrun` artifact. The
-wrapper installs and caches `bobzhang/docx2html/cmd/docx2html@0.1.40` with
+wrapper installs and caches `bobzhang/docx2html/cmd/docx2html@0.5.0` with
 `moon install` if `docx2html` is not already on `PATH`. The converter targets
 semantic HTML/Markdown output rather than pixel-perfect Word layout, and it
 handles `.docx`, not legacy `.doc` files.

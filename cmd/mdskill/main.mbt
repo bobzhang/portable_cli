@@ -1,31 +1,31 @@
 ///|
 struct Heading {
-  line : Int
-  level : Int
+  line : Int32
+  level : Int32
   text : String
   slug : String
 }
 
 ///|
 struct LinkItem {
-  line : Int
+  line : Int32
   text : String
   target : String
 }
 
 ///|
 struct TaskItem {
-  line : Int
+  line : Int32
   done : Bool
   text : String
 }
 
 ///|
 struct CodeFence {
-  start_line : Int
-  end_line : Int
+  start_line : Int32
+  end_line : Int32
   language : String
-  lines : Int
+  lines : Int32
 }
 
 ///|
@@ -37,15 +37,15 @@ struct FrontMatterItem {
 ///|
 struct MarkdownIssue {
   severity : String
-  line : Int
+  line : Int32
   message : String
 }
 
 ///|
 struct MarkdownReport {
-  lines : Int
-  mut words : Int
-  chars : Int
+  lines : Int32
+  mut words : Int32
+  chars : Int32
   frontmatter : Array[FrontMatterItem]
   headings : Array[Heading]
   links : Array[LinkItem]
@@ -55,7 +55,7 @@ struct MarkdownReport {
 }
 
 ///|
-fn[T] die(message : String, code : Int) -> T {
+fn[T] die(message : String, code : Int32) -> T {
   @miniio.stderr.write_text(message + "\n") catch {
     _ => ()
   }
@@ -151,7 +151,11 @@ fn value(
 }
 
 ///|
-fn int_value(matches : @argparse.Matches, name : String, fallback : Int) -> Int {
+fn int_value(
+  matches : @argparse.Matches,
+  name : String,
+  fallback : Int32,
+) -> Int32 {
   @string.parse_int(value(matches, name, fallback.to_string())) catch {
     _ => fallback
   }
@@ -201,7 +205,7 @@ fn word_char(ch : Char) -> Bool {
 }
 
 ///|
-fn count_words_line(line : String) -> Int {
+fn count_words_line(line : String) -> Int32 {
   let mut count = 0
   let mut in_word = false
   for ch in line {
@@ -218,7 +222,7 @@ fn count_words_line(line : String) -> Int {
 }
 
 ///|
-fn line_count(text : String) -> Int {
+fn line_count(text : String) -> Int32 {
   if text.is_empty() {
     return 0
   }
@@ -254,7 +258,7 @@ fn slugify(text : String) -> String {
 }
 
 ///|
-fn heading_from_line(line : String, line_no : Int) -> Heading? {
+fn heading_from_line(line : String, line_no : Int32) -> Heading? {
   let trimmed = line.trim().to_owned()
   let mut level = 0
   while level < trimmed.length() && level < 6 {
@@ -280,7 +284,7 @@ fn heading_from_line(line : String, line_no : Int) -> Heading? {
 }
 
 ///|
-fn task_from_line(line : String, line_no : Int) -> TaskItem? {
+fn task_from_line(line : String, line_no : Int32) -> TaskItem? {
   let trimmed = line.trim().to_owned()
   if trimmed.has_prefix("- [ ] ") || trimmed.has_prefix("* [ ] ") {
     Some(TaskItem::{
@@ -303,7 +307,7 @@ fn task_from_line(line : String, line_no : Int) -> TaskItem? {
 }
 
 ///|
-fn find_from(text : String, needle : String, start : Int) -> Int? {
+fn find_from(text : String, needle : String, start : Int32) -> Int32? {
   if start >= text.length() {
     return None
   }
@@ -314,7 +318,11 @@ fn find_from(text : String, needle : String, start : Int) -> Int? {
 }
 
 ///|
-fn collect_links(line : String, line_no : Int, links : Array[LinkItem]) -> Unit {
+fn collect_links(
+  line : String,
+  line_no : Int32,
+  links : Array[LinkItem],
+) -> Unit {
   let mut pos = 0
   while pos < line.length() {
     guard find_from(line, "[", pos) is Some(open) else { break }
@@ -369,7 +377,7 @@ fn fence_language(line : String, marker : String) -> String {
 fn push_issue(
   issues : Array[MarkdownIssue],
   severity : String,
-  line : Int,
+  line : Int32,
   message : String,
 ) -> Unit {
   issues.push(MarkdownIssue::{ severity, line, message, })
@@ -499,7 +507,7 @@ fn analyze(text : String) -> MarkdownReport {
 }
 
 ///|
-fn int_json(value : Int) -> Json {
+fn int_json(value : Int32) -> Json {
   Json::number(value.to_double(), repr=value.to_string())
 }
 
@@ -613,7 +621,7 @@ fn write_summary(out : StringBuilder, report : MarkdownReport) -> Unit {
 fn write_frontmatter(
   out : StringBuilder,
   report : MarkdownReport,
-  limit : Int,
+  limit : Int32,
 ) -> Unit {
   out.write_string("## Front Matter\n\n")
   if report.frontmatter.is_empty() {
@@ -634,7 +642,7 @@ fn write_frontmatter(
 fn write_outline(
   out : StringBuilder,
   report : MarkdownReport,
-  limit : Int,
+  limit : Int32,
 ) -> Unit {
   out.write_string("## Outline\n\n")
   if report.headings.is_empty() {
@@ -655,7 +663,7 @@ fn write_outline(
 fn write_links(
   out : StringBuilder,
   report : MarkdownReport,
-  limit : Int,
+  limit : Int32,
 ) -> Unit {
   out.write_string("## Links\n\n")
   if report.links.is_empty() {
@@ -676,7 +684,7 @@ fn write_links(
 fn write_tasks(
   out : StringBuilder,
   report : MarkdownReport,
-  limit : Int,
+  limit : Int32,
 ) -> Unit {
   out.write_string("## Tasks\n\n")
   if report.tasks.is_empty() {
@@ -698,7 +706,7 @@ fn write_tasks(
 fn write_code(
   out : StringBuilder,
   report : MarkdownReport,
-  limit : Int,
+  limit : Int32,
 ) -> Unit {
   out.write_string("## Code Fences\n\n")
   if report.fences.is_empty() {
@@ -719,7 +727,7 @@ fn write_code(
 fn write_issues(
   out : StringBuilder,
   report : MarkdownReport,
-  limit : Int,
+  limit : Int32,
 ) -> Unit {
   out.write_string("## Issues\n\n")
   if report.issues.is_empty() {

@@ -1,5 +1,5 @@
 ///|
-fn summary_by_number(input : PdfInput, number : Int) -> PdfObjectSummary? {
+fn summary_by_number(input : PdfInput, number : Int32) -> PdfObjectSummary? {
   let scan = scan_pdf(input)
   for hit in scan.object_hits {
     if hit.number == number {
@@ -10,7 +10,7 @@ fn summary_by_number(input : PdfInput, number : Int) -> PdfObjectSummary? {
 }
 
 ///|
-fn indirect_number(object : @syntax.PdfObject) -> Int? {
+fn indirect_number(object : @syntax.PdfObject) -> Int32? {
   match object {
     PdfIndirect(number) => Some(number)
     _ => None
@@ -18,7 +18,7 @@ fn indirect_number(object : @syntax.PdfObject) -> Int? {
 }
 
 ///|
-fn filespec_embedded_object(filespec : @syntax.PdfObject) -> Int? {
+fn filespec_embedded_object(filespec : @syntax.PdfObject) -> Int32? {
   match object_dictionary(filespec) {
     Some(dict) =>
       match lookup_object(dict, "/EF") {
@@ -47,7 +47,10 @@ fn filespec_embedded_object(filespec : @syntax.PdfObject) -> Int? {
 }
 
 ///|
-fn filespec_name(filespec : @syntax.PdfObject, embedded_object : Int) -> String {
+fn filespec_name(
+  filespec : @syntax.PdfObject,
+  embedded_object : Int32,
+) -> String {
   match object_dictionary(filespec) {
     Some(dict) => {
       match lookup_text_value(dict, "/UF") {
@@ -64,7 +67,7 @@ fn filespec_name(filespec : @syntax.PdfObject, embedded_object : Int) -> String 
 }
 
 ///|
-fn safe_filename_char(value : Int) -> Bool {
+fn safe_filename_char(value : Int32) -> Bool {
   (value >= b'a'.to_int() && value <= b'z'.to_int()) ||
   (value >= b'A'.to_int() && value <= b'Z'.to_int()) ||
   (value >= b'0'.to_int() && value <= b'9'.to_int()) ||
@@ -74,7 +77,7 @@ fn safe_filename_char(value : Int) -> Bool {
 }
 
 ///|
-fn safe_attachment_name(name : String, fallback_object : Int) -> String {
+fn safe_attachment_name(name : String, fallback_object : Int32) -> String {
   let bytes = @utf8.encode(name)
   let output : Array[Byte] = []
   for index in 0..<bytes.length() {
@@ -225,7 +228,7 @@ fn is_filespec_object(object : @syntax.PdfObject) -> Bool {
 ///|
 fn attachment_summaries(
   input : PdfInput,
-  limit : Int,
+  limit : Int32,
   extract_dir : String?,
 ) -> Array[PdfAttachmentSummary] {
   let cap = if limit < 0 { 0 } else { limit }
@@ -264,7 +267,7 @@ fn attachment_summary_json(summary : PdfAttachmentSummary) -> Json {
 ///|
 fn attachments_json(
   input : String,
-  limit : Int,
+  limit : Int32,
   extract_dir : String?,
   summaries : Array[PdfAttachmentSummary],
 ) -> String {
@@ -288,7 +291,7 @@ fn attachments_json(
 ///|
 fn attachments_markdown(
   input : String,
-  limit : Int,
+  limit : Int32,
   extract_dir : String?,
   summaries : Array[PdfAttachmentSummary],
 ) -> String {
@@ -325,7 +328,7 @@ fn attachments_markdown(
 ///|
 fn run_attachments(
   input : String,
-  limit : Int,
+  limit : Int32,
   extract_dir : String?,
   as_json : Bool,
 ) -> Unit {

@@ -1,15 +1,15 @@
 ///|
 struct TomlTable {
-  line : Int
+  line : Int32
   name : String
   array : Bool
 }
 
 ///|
 struct TomlKey {
-  line : Int
+  line : Int32
   table : String
-  table_line : Int
+  table_line : Int32
   name : String
   path : String
   kind : String
@@ -19,21 +19,21 @@ struct TomlKey {
 ///|
 struct TomlIssue {
   severity : String
-  line : Int
+  line : Int32
   message : String
 }
 
 ///|
 struct TomlReport {
-  lines : Int
-  chars : Int
+  lines : Int32
+  chars : Int32
   tables : Array[TomlTable]
   keys : Array[TomlKey]
   issues : Array[TomlIssue]
 }
 
 ///|
-fn[T] die(message : String, code : Int) -> T {
+fn[T] die(message : String, code : Int32) -> T {
   @miniio.stderr.write_text(message + "\n") catch {
     _ => ()
   }
@@ -144,7 +144,11 @@ fn value(
 }
 
 ///|
-fn int_value(matches : @argparse.Matches, name : String, fallback : Int) -> Int {
+fn int_value(
+  matches : @argparse.Matches,
+  name : String,
+  fallback : Int32,
+) -> Int32 {
   @string.parse_int(value(matches, name, fallback.to_string())) catch {
     _ => fallback
   }
@@ -189,7 +193,7 @@ fn write_output(text : String, matches : @argparse.Matches) -> Unit {
 }
 
 ///|
-fn line_count(text : String) -> Int {
+fn line_count(text : String) -> Int32 {
   if text.is_empty() {
     return 0
   }
@@ -207,7 +211,7 @@ fn line_count(text : String) -> Int {
 }
 
 ///|
-fn find_unquoted(text : String, needle : Char) -> Int? {
+fn find_unquoted(text : String, needle : Char) -> Int32? {
   let mut quote = '\u{0}'
   let mut escaped = false
   let mut pos = 0
@@ -243,7 +247,7 @@ fn strip_comment(line : String) -> String {
 fn push_issue(
   issues : Array[TomlIssue],
   severity : String,
-  line : Int,
+  line : Int32,
   message : String,
 ) -> Unit {
   issues.push(TomlIssue::{ severity, line, message, })
@@ -252,7 +256,7 @@ fn push_issue(
 ///|
 fn parse_table(
   line : String,
-  line_no : Int,
+  line_no : Int32,
   issues : Array[TomlIssue],
 ) -> TomlTable? {
   if line.has_prefix("[[") && line.has_suffix("]]") {
@@ -334,9 +338,9 @@ fn full_path(table : String, key : String) -> String {
 ///|
 fn parse_key(
   line : String,
-  line_no : Int,
+  line_no : Int32,
   table : String,
-  table_line : Int,
+  table_line : Int32,
   issues : Array[TomlIssue],
 ) -> TomlKey? {
   match find_unquoted(line, '=') {
@@ -389,8 +393,8 @@ fn analyze(text : String) -> TomlReport {
     keys: [],
     issues: [],
   }
-  let seen_tables : Map[String, Int] = Map([])
-  let seen_keys : Map[String, Int] = Map([])
+  let seen_tables : Map[String, Int32] = Map([])
+  let seen_keys : Map[String, Int32] = Map([])
   let mut current_table = ""
   let mut current_table_line = 0
   let mut current_table_array = false
@@ -455,7 +459,7 @@ fn analyze(text : String) -> TomlReport {
 }
 
 ///|
-fn int_json(value : Int) -> Json {
+fn int_json(value : Int32) -> Json {
   Json::number(value.to_double(), repr=value.to_string())
 }
 
@@ -515,7 +519,11 @@ fn write_summary(out : StringBuilder, report : TomlReport) -> Unit {
 }
 
 ///|
-fn write_tables(out : StringBuilder, report : TomlReport, limit : Int) -> Unit {
+fn write_tables(
+  out : StringBuilder,
+  report : TomlReport,
+  limit : Int32,
+) -> Unit {
   out.write_string("## Tables\n\n")
   if report.tables.is_empty() {
     out.write_string("_No tables found._\n")
@@ -533,7 +541,7 @@ fn write_tables(out : StringBuilder, report : TomlReport, limit : Int) -> Unit {
 }
 
 ///|
-fn write_keys(out : StringBuilder, report : TomlReport, limit : Int) -> Unit {
+fn write_keys(out : StringBuilder, report : TomlReport, limit : Int32) -> Unit {
   out.write_string("## Keys\n\n")
   if report.keys.is_empty() {
     out.write_string("_No keys found._\n")
@@ -550,7 +558,11 @@ fn write_keys(out : StringBuilder, report : TomlReport, limit : Int) -> Unit {
 }
 
 ///|
-fn write_issues(out : StringBuilder, report : TomlReport, limit : Int) -> Unit {
+fn write_issues(
+  out : StringBuilder,
+  report : TomlReport,
+  limit : Int32,
+) -> Unit {
   out.write_string("## Issues\n\n")
   if report.issues.is_empty() {
     out.write_string("_No structural issues found._\n")
@@ -642,7 +654,7 @@ fn render_get(
 fn append_keys_for_table(
   out : StringBuilder,
   report : TomlReport,
-  table_line : Int,
+  table_line : Int32,
 ) -> Unit {
   for key in report.keys {
     if key.table_line == table_line {

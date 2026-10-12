@@ -91,7 +91,7 @@ fn is_form_field_object(dict : @syntax.PdfObject) -> Bool {
 
 ///|
 fn form_field_summary(
-  object_number : Int,
+  object_number : Int32,
   dict : @syntax.PdfObject,
 ) -> PdfFormFieldSummary {
   let raw_type = lookup_name_text(dict, "/FT")
@@ -113,7 +113,7 @@ fn form_field_summary(
 }
 
 ///|
-fn form_summaries(input : PdfInput, limit : Int) -> PdfFormsSummary {
+fn form_summaries(input : PdfInput, limit : Int32) -> PdfFormsSummary {
   let cap = if limit < 0 { 0 } else { limit }
   let scan = scan_pdf(input)
   let fields : Array[PdfFormFieldSummary] = []
@@ -160,7 +160,7 @@ fn form_field_json(field : PdfFormFieldSummary) -> Json {
 }
 
 ///|
-fn forms_json(summary : PdfFormsSummary, limit : Int) -> String {
+fn forms_json(summary : PdfFormsSummary, limit : Int32) -> String {
   Json::object({
     "acroform_objects": int_json(summary.acroform_objects),
     "fields": Json::array(
@@ -183,7 +183,7 @@ fn markdown_cell(text : String) -> String {
 }
 
 ///|
-fn forms_markdown(summary : PdfFormsSummary, limit : Int) -> String {
+fn forms_markdown(summary : PdfFormsSummary, limit : Int32) -> String {
   let mut out =
     $|# PDF Forms
     $|
@@ -207,7 +207,7 @@ fn forms_markdown(summary : PdfFormsSummary, limit : Int) -> String {
 }
 
 ///|
-fn run_forms(input : String, limit : Int, as_json : Bool) -> Unit {
+fn run_forms(input : String, limit : Int32, as_json : Bool) -> Unit {
   let summary = form_summaries(read_pdf_input(input), limit)
   let out = if as_json {
     forms_json(summary, limit)

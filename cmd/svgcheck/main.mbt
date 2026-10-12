@@ -1,35 +1,35 @@
 ///|
 struct TagCount {
   name : String
-  count : Int
+  count : Int32
 }
 
 ///|
 struct SvgIssue {
   severity : String
-  line : Int
+  line : Int32
   message : String
 }
 
 ///|
 struct SvgSummary {
-  lines : Int
-  chars : Int
-  mut elements : Int
+  lines : Int32
+  chars : Int32
+  mut elements : Int32
   mut root_seen : Bool
   mut width : String
   mut height : String
   mut view_box : String
-  mut scripts : Int
-  mut images : Int
-  mut foreign_objects : Int
-  mut animations : Int
-  tags : Map[String, Int]
+  mut scripts : Int32
+  mut images : Int32
+  mut foreign_objects : Int32
+  mut animations : Int32
+  tags : Map[String, Int32]
   issues : Array[SvgIssue]
 }
 
 ///|
-fn[T] die(message : String, code : Int) -> T {
+fn[T] die(message : String, code : Int32) -> T {
   @miniio.stderr.write_text(message + "\n") catch {
     _ => ()
   }
@@ -113,7 +113,11 @@ fn value(
 }
 
 ///|
-fn int_value(matches : @argparse.Matches, name : String, fallback : Int) -> Int {
+fn int_value(
+  matches : @argparse.Matches,
+  name : String,
+  fallback : Int32,
+) -> Int32 {
   @string.parse_int(value(matches, name, fallback.to_string())) catch {
     _ => fallback
   }
@@ -149,7 +153,7 @@ fn write_output(text : String, matches : @argparse.Matches) -> Unit {
 }
 
 ///|
-fn line_count(text : String) -> Int {
+fn line_count(text : String) -> Int32 {
   if text.is_empty() {
     return 0
   }
@@ -167,7 +171,7 @@ fn line_count(text : String) -> Int {
 }
 
 ///|
-fn find_from(text : String, needle : String, start : Int) -> Int? {
+fn find_from(text : String, needle : String, start : Int32) -> Int32? {
   if start >= text.length() {
     return None
   }
@@ -242,7 +246,7 @@ fn attr_value(token : String, name : String) -> String {
 fn push_issue(
   issues : Array[SvgIssue],
   severity : String,
-  line : Int,
+  line : Int32,
   message : String,
 ) -> Unit {
   issues.push(SvgIssue::{ severity, line, message, })
@@ -262,7 +266,7 @@ fn contains_event_handler(token_lower : String) -> Bool {
 }
 
 ///|
-fn inspect_tag(summary : SvgSummary, token : String, line_no : Int) -> Unit {
+fn inspect_tag(summary : SvgSummary, token : String, line_no : Int32) -> Unit {
   if !is_opening_tag(token) {
     return
   }
@@ -364,7 +368,7 @@ fn tag_counts(summary : SvgSummary) -> Array[TagCount] {
 }
 
 ///|
-fn int_json(value : Int) -> Json {
+fn int_json(value : Int32) -> Json {
   Json::number(value.to_double(), repr=value.to_string())
 }
 
@@ -467,7 +471,7 @@ fn report_markdown(summary : SvgSummary, matches : @argparse.Matches) -> String 
 }
 
 ///|
-fn severity_rank(severity : String) -> Int {
+fn severity_rank(severity : String) -> Int32 {
   match severity {
     "high" => 3
     "medium" => 2
@@ -478,7 +482,7 @@ fn severity_rank(severity : String) -> Int {
 }
 
 ///|
-fn validate_fail_on(value : String) -> Int {
+fn validate_fail_on(value : String) -> Int32 {
   let normalized = value.to_lower()
   let rank = severity_rank(normalized)
   if rank < 0 {
@@ -488,7 +492,7 @@ fn validate_fail_on(value : String) -> Int {
 }
 
 ///|
-fn should_fail(summary : SvgSummary, threshold : Int) -> Bool {
+fn should_fail(summary : SvgSummary, threshold : Int32) -> Bool {
   if threshold <= 0 {
     return false
   }
