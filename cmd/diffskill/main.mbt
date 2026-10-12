@@ -1,21 +1,21 @@
 ///|
 struct DiffOptions {
   file : String?
-  limit : Int
+  limit : Int32
   output : String?
 }
 
 ///|
 struct DiffFile {
   mut path : String
-  mut additions : Int
-  mut deletions : Int
-  mut hunks : Int
+  mut additions : Int32
+  mut deletions : Int32
+  mut hunks : Int32
   mut binary : Bool
 }
 
 ///|
-fn[T] die(message : String, code : Int) -> T {
+fn[T] die(message : String, code : Int32) -> T {
   @miniio.stderr.write_text(message + "\n") catch {
     _ => ()
   }
@@ -81,7 +81,11 @@ fn value(
 }
 
 ///|
-fn int_value(matches : @argparse.Matches, name : String, fallback : Int) -> Int {
+fn int_value(
+  matches : @argparse.Matches,
+  name : String,
+  fallback : Int32,
+) -> Int32 {
   @string.parse_int(value(matches, name, fallback.to_string())) catch {
     _ => fallback
   }
@@ -248,22 +252,22 @@ fn file_tags(file : DiffFile) -> String {
 }
 
 ///|
-fn total_additions(files : Array[DiffFile]) -> Int {
+fn total_additions(files : Array[DiffFile]) -> Int32 {
   files.fold(init=0, (sum, file) => sum + file.additions)
 }
 
 ///|
-fn total_deletions(files : Array[DiffFile]) -> Int {
+fn total_deletions(files : Array[DiffFile]) -> Int32 {
   files.fold(init=0, (sum, file) => sum + file.deletions)
 }
 
 ///|
-fn total_hunks(files : Array[DiffFile]) -> Int {
+fn total_hunks(files : Array[DiffFile]) -> Int32 {
   files.fold(init=0, (sum, file) => sum + file.hunks)
 }
 
 ///|
-fn count_with_tag(files : Array[DiffFile], tag : String) -> Int {
+fn count_with_tag(files : Array[DiffFile], tag : String) -> Int32 {
   let mut count = 0
   for file in files {
     if file_tags(file).contains(tag) {

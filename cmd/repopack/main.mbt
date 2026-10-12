@@ -14,32 +14,32 @@ struct PackOptions {
   redact_secrets : Bool
   stats : Bool
   exts : Array[String]
-  max_files : Int
-  max_chars : Int
-  budget_chars : Int
+  max_files : Int32
+  max_chars : Int32
+  budget_chars : Int32
   output : String?
 }
 
 ///|
 struct PackedFile {
   path : String
-  chars : Int
+  chars : Int32
   truncated : Bool
   budget_truncated : Bool
-  redactions : Int
+  redactions : Int32
   content : String
 }
 
 ///|
 struct ExtStat {
   ext : String
-  mut files : Int
-  mut chars : Int
-  mut redactions : Int
+  mut files : Int32
+  mut chars : Int32
+  mut redactions : Int32
 }
 
 ///|
-fn[T] die(message : String, code : Int) -> T {
+fn[T] die(message : String, code : Int32) -> T {
   @miniio.stderr.write_text(message + "\n") catch {
     _ => ()
   }
@@ -154,7 +154,11 @@ fn value(
 }
 
 ///|
-fn int_value(matches : @argparse.Matches, name : String, fallback : Int) -> Int {
+fn int_value(
+  matches : @argparse.Matches,
+  name : String,
+  fallback : Int32,
+) -> Int32 {
   @string.parse_int(value(matches, name, fallback.to_string())) catch {
     _ => fallback
   }
@@ -290,7 +294,7 @@ fn collect_children(path : String, options : PackOptions) -> Array[FileEntry] {
 }
 
 ///|
-fn take_chars(text : String, limit : Int) -> String {
+fn take_chars(text : String, limit : Int32) -> String {
   if limit <= 0 {
     return ""
   }
@@ -307,7 +311,7 @@ fn take_chars(text : String, limit : Int) -> String {
 }
 
 ///|
-fn take_content_prefix(text : String, limit : Int) -> String {
+fn take_content_prefix(text : String, limit : Int32) -> String {
   if text.char_length() <= limit {
     return text
   }
@@ -338,7 +342,7 @@ fn take_content_prefix(text : String, limit : Int) -> String {
 }
 
 ///|
-fn take_line_budget_prefix(text : String, limit : Int) -> String {
+fn take_line_budget_prefix(text : String, limit : Int32) -> String {
   if text.char_length() <= limit {
     return text
   }
@@ -371,7 +375,7 @@ fn take_line_budget_prefix(text : String, limit : Int) -> String {
 ///|
 fn is_ascii_letter(ch : Char) -> Bool {
   match ch {
-    'a'..='z' | 'A'..='Z' => true
+    'a'..<='z' | 'A'..<='Z' => true
     _ => false
   }
 }
@@ -379,7 +383,7 @@ fn is_ascii_letter(ch : Char) -> Bool {
 ///|
 fn is_ascii_digit(ch : Char) -> Bool {
   match ch {
-    '0'..='9' => true
+    '0'..<='9' => true
     _ => false
   }
 }
@@ -439,7 +443,7 @@ fn looks_placeholder(value : String) -> Bool {
 }
 
 ///|
-fn secret_char_classes(value : String) -> Int {
+fn secret_char_classes(value : String) -> Int32 {
   let mut letters = false
   let mut digits = false
   let mut symbols = false
@@ -474,7 +478,7 @@ fn looks_secret_value(value : String) -> Bool {
 }
 
 ///|
-fn find_assignment_delim(line : String) -> Int {
+fn find_assignment_delim(line : String) -> Int32 {
   let mut index = 0
   while index < line.length() {
     match line.get_char(index) {
@@ -490,9 +494,9 @@ fn find_assignment_delim(line : String) -> Int {
 fn redact_prefixed_token(
   text : String,
   prefix : String,
-  min_length : Int,
+  min_length : Int32,
   label : String,
-) -> (String, Int) {
+) -> (String, Int32) {
   let out = StringBuilder()
   let mut count = 0
   let mut first = true
@@ -517,7 +521,7 @@ fn redact_prefixed_token(
 }
 
 ///|
-fn redact_prefixes(line : String) -> (String, Int) {
+fn redact_prefixes(line : String) -> (String, Int32) {
   let mut text = line
   let mut total = 0
   for
@@ -545,7 +549,7 @@ fn redact_prefixes(line : String) -> (String, Int) {
 }
 
 ///|
-fn redact_assignment(line : String) -> (String, Int) {
+fn redact_assignment(line : String) -> (String, Int32) {
   let split = find_assignment_delim(line)
   if split < 0 || split + 1 >= line.length() {
     return (line, 0)
@@ -561,7 +565,7 @@ fn redact_assignment(line : String) -> (String, Int) {
 }
 
 ///|
-fn redact_secret_line(line : String) -> (String, Int) {
+fn redact_secret_line(line : String) -> (String, Int32) {
   let trimmed = line.trim().to_owned()
   if trimmed.contains("-----BEGIN ") && trimmed.contains(" PRIVATE KEY-----") {
     return ("-----BEGIN [REDACTED PRIVATE KEY]-----", 1)
@@ -572,7 +576,7 @@ fn redact_secret_line(line : String) -> (String, Int) {
 }
 
 ///|
-fn redact_secrets(text : String) -> (String, Int) {
+fn redact_secrets(text : String) -> (String, Int32) {
   let out = StringBuilder()
   let mut total = 0
   let mut first = true
@@ -590,7 +594,7 @@ fn redact_secrets(text : String) -> (String, Int) {
 }
 
 ///|
-fn included_content_chars(files : Array[PackedFile]) -> Int {
+fn included_content_chars(files : Array[PackedFile]) -> Int32 {
   let mut total = 0
   for file in files {
     total += file.content.char_length()
@@ -599,7 +603,7 @@ fn included_content_chars(files : Array[PackedFile]) -> Int {
 }
 
 ///|
-fn remaining_budget(files : Array[PackedFile], options : PackOptions) -> Int {
+fn remaining_budget(files : Array[PackedFile], options : PackOptions) -> Int32 {
   if options.budget_chars <= 0 {
     options.max_chars
   } else {
@@ -747,7 +751,7 @@ fn extension_stats(files : Array[PackedFile]) -> Array[ExtStat] {
 }
 
 ///|
-fn total_redactions(files : Array[PackedFile]) -> Int {
+fn total_redactions(files : Array[PackedFile]) -> Int32 {
   let mut redactions = 0
   for file in files {
     redactions += file.redactions

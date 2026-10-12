@@ -66,7 +66,7 @@ $ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --inspect --document
 
 - root kind: Document
 - elements: 16
-- text chars: 155
+- text chars: 154
 - headings: 2
 - links: 2
 - images: 1
@@ -107,7 +107,7 @@ The same inspection report can be emitted as compact JSON for automation.
 
 ```mooncram
 $ moon -C "$TESTDIR/../.." run --target wasm cmd/htmlfmt -- --inspect --json --document --file tests/cram/fixtures/html/report.html
-{"elements":16,"forms":1,"headings":[{"level":1,"text":"Portable Skills"},{"level":2,"text":"Checklist"}],"images":1,"images_missing_alt":1,"issues":[{"message":"link with href has no text: /empty","severity":"medium"},{"message":"image missing alt text: chart.png","severity":"medium"},{"message":"script present: app.js","severity":"info"}],"links":[{"href":"https://mooncakes.io","text":"MoonCakes"},{"href":"/empty","text":""}],"metadata":[{"key":"title","value":"Portable Skills"},{"key":"description","value":"MoonBit Wasm agent tools"},{"key":"og:title","value":"Portable CLI"}],"root_kind":"Document","scripts":1,"text_chars":155}
+{"elements":16,"forms":1,"headings":[{"level":1,"text":"Portable Skills"},{"level":2,"text":"Checklist"}],"images":1,"images_missing_alt":1,"issues":[{"message":"link with href has no text: /empty","severity":"medium"},{"message":"image missing alt text: chart.png","severity":"medium"},{"message":"script present: app.js","severity":"info"}],"links":[{"href":"https://mooncakes.io","text":"MoonCakes"},{"href":"/empty","text":""}],"metadata":[{"key":"title","value":"Portable Skills"},{"key":"description","value":"MoonBit Wasm agent tools"},{"key":"og:title","value":"Portable CLI"}],"root_kind":"Document","scripts":1,"text_chars":154}
 ```
 
 ## Extract Text

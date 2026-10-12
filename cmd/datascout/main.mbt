@@ -3,8 +3,8 @@ struct DataOptions {
   file : String?
   delimiter : String
   has_header : Bool
-  max_rows : Int
-  sample_rows : Int
+  max_rows : Int32
+  sample_rows : Int32
   as_json : Bool
   output : String?
 }
@@ -12,26 +12,26 @@ struct DataOptions {
 ///|
 struct ColumnStats {
   name : String
-  mut empty : Int
-  mut non_empty : Int
-  mut int_count : Int
-  mut number_count : Int
-  mut bool_count : Int
-  mut max_len : Int
+  mut empty : Int32
+  mut non_empty : Int32
+  mut int_count : Int32
+  mut number_count : Int32
+  mut bool_count : Int32
+  mut max_len : Int32
 }
 
 ///|
 struct DatasetSummary {
   delimiter : String
-  rows_scanned : Int
-  columns : Int
+  rows_scanned : Int32
+  columns : Int32
   truncated : Bool
   column_stats : Array[ColumnStats]
   sample : Array[Array[String]]
 }
 
 ///|
-fn[T] die(message : String, code : Int) -> T {
+fn[T] die(message : String, code : Int32) -> T {
   @miniio.stderr.write_text(message + "\n") catch {
     _ => ()
   }
@@ -128,7 +128,11 @@ fn value(
 }
 
 ///|
-fn int_value(matches : @argparse.Matches, name : String, fallback : Int) -> Int {
+fn int_value(
+  matches : @argparse.Matches,
+  name : String,
+  fallback : Int32,
+) -> Int32 {
   @string.parse_int(value(matches, name, fallback.to_string())) catch {
     _ => fallback
   }
@@ -205,7 +209,7 @@ fn parse_delimiter(name : String, input : String) -> Char {
 }
 
 ///|
-fn count_char(text : String, needle : Char) -> Int {
+fn count_char(text : String, needle : Char) -> Int32 {
   let mut count = 0
   for ch in text {
     if ch == needle {
@@ -270,12 +274,12 @@ fn parse_row(line : String, delimiter : Char) -> Array[String] {
 }
 
 ///|
-fn column_name(index : Int) -> String {
+fn column_name(index : Int32) -> String {
   "column_\{index + 1}"
 }
 
 ///|
-fn ensure_width(row : Array[String], width : Int) -> Array[String] {
+fn ensure_width(row : Array[String], width : Int32) -> Array[String] {
   let out : Array[String] = []
   for index in 0..<width {
     out.push(row.get(index).unwrap_or(""))
@@ -418,7 +422,7 @@ fn summarize(input : String, options : DataOptions) -> DatasetSummary {
 }
 
 ///|
-fn int_json(value : Int) -> Json {
+fn int_json(value : Int32) -> Json {
   Json::number(value.to_double(), repr=value.to_string())
 }
 

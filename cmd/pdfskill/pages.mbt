@@ -15,7 +15,7 @@ fn page_value_text(object : @syntax.PdfObject) -> String {
 }
 
 ///|
-fn page_array_values_text(object : @syntax.PdfObject, limit : Int) -> String {
+fn page_array_values_text(object : @syntax.PdfObject, limit : Int32) -> String {
   match object {
     PdfArray(items) => {
       let values : Array[String] = []
@@ -83,8 +83,8 @@ fn is_page_object(dict : @syntax.PdfObject) -> Bool {
 
 ///|
 fn page_summary(
-  page_number : Int,
-  object_number : Int,
+  page_number : Int32,
+  object_number : Int32,
   dict : @syntax.PdfObject,
 ) -> PdfPageSummary {
   {
@@ -100,7 +100,7 @@ fn page_summary(
 }
 
 ///|
-fn page_summaries(input : PdfInput, limit : Int) -> PdfPagesSummary {
+fn page_summaries(input : PdfInput, limit : Int32) -> PdfPagesSummary {
   let cap = if limit < 0 { 0 } else { limit }
   let scan = scan_pdf(input)
   let pages : Array[PdfPageSummary] = []
@@ -138,7 +138,7 @@ fn page_summary_json(page : PdfPageSummary) -> Json {
 }
 
 ///|
-fn pages_json(summary : PdfPagesSummary, limit : Int) -> String {
+fn pages_json(summary : PdfPagesSummary, limit : Int32) -> String {
   Json::object({
     "limit": int_json(limit),
     "listed": int_json(summary.pages.length()),
@@ -154,7 +154,7 @@ fn pages_json(summary : PdfPagesSummary, limit : Int) -> String {
 }
 
 ///|
-fn pages_markdown(summary : PdfPagesSummary, limit : Int) -> String {
+fn pages_markdown(summary : PdfPagesSummary, limit : Int32) -> String {
   let mut out =
     $|# PDF Pages
     $|
@@ -176,7 +176,7 @@ fn pages_markdown(summary : PdfPagesSummary, limit : Int) -> String {
 }
 
 ///|
-fn run_pages(input : String, limit : Int, as_json : Bool) -> Unit {
+fn run_pages(input : String, limit : Int32, as_json : Bool) -> Unit {
   let summary = page_summaries(read_pdf_input(input), limit)
   let out = if as_json {
     pages_json(summary, limit)

@@ -138,7 +138,7 @@ fn is_action_candidate(dict : @syntax.PdfObject) -> Bool {
 
 ///|
 fn action_summary(
-  object_number : Int,
+  object_number : Int32,
   dict : @syntax.PdfObject,
 ) -> PdfActionSummary {
   let trigger = action_trigger_text(dict)
@@ -154,7 +154,7 @@ fn action_summary(
 }
 
 ///|
-fn action_summaries(input : PdfInput, limit : Int) -> PdfActionsSummary {
+fn action_summaries(input : PdfInput, limit : Int32) -> PdfActionsSummary {
   let cap = if limit < 0 { 0 } else { limit }
   let scan = scan_pdf(input)
   let actions : Array[PdfActionSummary] = []
@@ -190,7 +190,7 @@ fn action_summary_json(action : PdfActionSummary) -> Json {
 }
 
 ///|
-fn actions_json(summary : PdfActionsSummary, limit : Int) -> String {
+fn actions_json(summary : PdfActionsSummary, limit : Int32) -> String {
   Json::object({
     "actions": Json::array(
       [
@@ -206,7 +206,7 @@ fn actions_json(summary : PdfActionsSummary, limit : Int) -> String {
 }
 
 ///|
-fn actions_markdown(summary : PdfActionsSummary, limit : Int) -> String {
+fn actions_markdown(summary : PdfActionsSummary, limit : Int32) -> String {
   let mut out =
     $|# PDF Actions
     $|
@@ -228,7 +228,7 @@ fn actions_markdown(summary : PdfActionsSummary, limit : Int) -> String {
 }
 
 ///|
-fn run_actions(input : String, limit : Int, as_json : Bool) -> Unit {
+fn run_actions(input : String, limit : Int32, as_json : Bool) -> Unit {
   let summary = action_summaries(read_pdf_input(input), limit)
   let out = if as_json {
     actions_json(summary, limit)

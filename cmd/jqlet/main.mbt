@@ -1,5 +1,5 @@
 ///|
-fn[T] die(message : String, code : Int) -> T {
+fn[T] die(message : String, code : Int32) -> T {
   @miniio.stderr.write_text(message + "\n") catch {
     _ => ()
   }
@@ -91,7 +91,11 @@ fn value(
 }
 
 ///|
-fn int_value(matches : @argparse.Matches, name : String, fallback : Int) -> Int {
+fn int_value(
+  matches : @argparse.Matches,
+  name : String,
+  fallback : Int32,
+) -> Int32 {
   @string.parse_int(value(matches, name, fallback.to_string())) catch {
     _ => fallback
   }
