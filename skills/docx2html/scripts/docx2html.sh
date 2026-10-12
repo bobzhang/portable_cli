@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-version="${DOCX2HTML_VERSION:-0.1.40}"
+version="${DOCX2HTML_VERSION:-0.5.0}"
 package="bobzhang/docx2html/cmd/docx2html@${version}"
 
 if [ -n "${DOCX2HTML_BIN:-}" ]; then
