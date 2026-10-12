@@ -1,5 +1,5 @@
 ///|
-fn[T] die(message : String, code : Int) -> T {
+fn[T] die(message : String, code : Int32) -> T {
   @miniio.stderr.write_text(message + "\n") catch {
     _ => ()
   }
@@ -116,7 +116,7 @@ fn parse() -> @argparse.Matches {
 }
 
 ///|
-fn output_mode_count(matches : @argparse.Matches) -> Int {
+fn output_mode_count(matches : @argparse.Matches) -> Int32 {
   let mut count = 0
   if flag(matches, "inspect") {
     count += 1
@@ -178,7 +178,11 @@ fn value(
 }
 
 ///|
-fn int_value(matches : @argparse.Matches, name : String, fallback : Int) -> Int {
+fn int_value(
+  matches : @argparse.Matches,
+  name : String,
+  fallback : Int32,
+) -> Int32 {
   @string.parse_int(value(matches, name, fallback.to_string())) catch {
     _ => fallback
   }
@@ -264,7 +268,7 @@ fn markdown_html(input : String, matches : @argparse.Matches) -> String {
 }
 
 ///|
-fn selected_limit(matches : @argparse.Matches) -> Int {
+fn selected_limit(matches : @argparse.Matches) -> Int32 {
   int_value(matches, "limit", 40).clamp(min=0, max=1000)
 }
 
@@ -391,7 +395,7 @@ fn select_html(
 
 ///|
 struct Heading {
-  level : Int
+  level : Int32
   text : String
 }
 
@@ -416,15 +420,15 @@ struct HtmlIssue {
 ///|
 struct HtmlReport {
   root_kind : String
-  mut elements : Int
-  mut text_chars : Int
+  mut elements : Int32
+  mut text_chars : Int32
   headings : Array[Heading]
   links : Array[LinkItem]
   metadata : Array[MetaItem]
-  mut images : Int
-  mut images_missing_alt : Int
-  mut scripts : Int
-  mut forms : Int
+  mut images : Int32
+  mut images_missing_alt : Int32
+  mut scripts : Int32
+  mut forms : Int32
   issues : Array[HtmlIssue]
 }
 
@@ -440,7 +444,7 @@ fn attr(node : @html_parser.Node, name : String) -> String? {
 ///|
 fn push_issue(
   issues : Array[HtmlIssue],
-  limit : Int,
+  limit : Int32,
   severity : String,
   message : String,
 ) -> Unit {
@@ -450,7 +454,7 @@ fn push_issue(
 }
 
 ///|
-fn heading_level(name : String) -> Int {
+fn heading_level(name : String) -> Int32 {
   match name {
     "h1" => 1
     "h2" => 2
@@ -503,7 +507,7 @@ fn meta_value(node : @html_parser.Node) -> String {
 ///|
 fn add_meta(
   metadata : Array[MetaItem],
-  limit : Int,
+  limit : Int32,
   key : String,
   value : String,
 ) -> Unit {
@@ -528,7 +532,7 @@ fn node_kind_text(kind : @html_parser.NodeKind) -> String {
 fn walk_report(
   node : @html_parser.Node,
   report : HtmlReport,
-  limit : Int,
+  limit : Int32,
 ) -> Unit {
   match node.kind() {
     Element => {
@@ -618,7 +622,7 @@ fn analyze_html(input : String, matches : @argparse.Matches) -> HtmlReport {
 }
 
 ///|
-fn int_json(value : Int) -> Json {
+fn int_json(value : Int32) -> Json {
   Json::number(value.to_double(), repr=value.to_string())
 }
 

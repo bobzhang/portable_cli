@@ -12,9 +12,9 @@ struct ScanOptions {
   default_ignore : Bool
   all_files : Bool
   exts : Array[String]
-  max_files : Int
-  max_bytes : Int
-  limit : Int
+  max_files : Int32
+  max_bytes : Int32
+  limit : Int32
   output : String?
   as_json : Bool
   fail_on : String
@@ -22,23 +22,23 @@ struct ScanOptions {
 
 ///|
 struct ScanStats {
-  mut files_seen : Int
-  mut files_scanned : Int
-  mut files_skipped : Int
-  mut bytes_scanned : Int
+  mut files_seen : Int32
+  mut files_scanned : Int32
+  mut files_skipped : Int32
+  mut bytes_scanned : Int32
 }
 
 ///|
 struct Finding {
   path : String
-  line : Int
+  line : Int32
   severity : String
   rule : String
   evidence : String
 }
 
 ///|
-fn[T] die(message : String, code : Int) -> T {
+fn[T] die(message : String, code : Int32) -> T {
   @miniio.stderr.write_text(message + "\n") catch {
     _ => ()
   }
@@ -154,7 +154,11 @@ fn value(
 }
 
 ///|
-fn int_value(matches : @argparse.Matches, name : String, fallback : Int) -> Int {
+fn int_value(
+  matches : @argparse.Matches,
+  name : String,
+  fallback : Int32,
+) -> Int32 {
   @string.parse_int(value(matches, name, fallback.to_string())) catch {
     _ => fallback
   }
@@ -326,7 +330,7 @@ fn collect_children(path : String, options : ScanOptions) -> Array[FileEntry] {
 ///|
 fn is_ascii_letter(ch : Char) -> Bool {
   match ch {
-    'a'..='z' | 'A'..='Z' => true
+    'a'..<='z' | 'A'..<='Z' => true
     _ => false
   }
 }
@@ -334,7 +338,7 @@ fn is_ascii_letter(ch : Char) -> Bool {
 ///|
 fn is_ascii_digit(ch : Char) -> Bool {
   match ch {
-    '0'..='9' => true
+    '0'..<='9' => true
     _ => false
   }
 }
@@ -365,7 +369,7 @@ fn token_prefix(text : String) -> String {
 }
 
 ///|
-fn take_chars(text : String, limit : Int) -> String {
+fn take_chars(text : String, limit : Int32) -> String {
   if limit <= 0 {
     return ""
   }
@@ -382,7 +386,7 @@ fn take_chars(text : String, limit : Int) -> String {
 }
 
 ///|
-fn tail_chars(text : String, limit : Int) -> String {
+fn tail_chars(text : String, limit : Int32) -> String {
   let total = text.char_length()
   if limit <= 0 || total <= limit {
     return text
@@ -419,7 +423,7 @@ fn add_finding(
   findings : Array[Finding],
   options : ScanOptions,
   path : String,
-  line : Int,
+  line : Int32,
   severity : String,
   rule : String,
   evidence : String,
@@ -458,7 +462,7 @@ fn looks_placeholder(value : String) -> Bool {
 }
 
 ///|
-fn char_classes(value : String) -> Int {
+fn char_classes(value : String) -> Int32 {
   let mut letters = false
   let mut digits = false
   let mut symbols = false
@@ -493,7 +497,7 @@ fn looks_secret_value(value : String) -> Bool {
 }
 
 ///|
-fn find_assignment_delim(line : String) -> Int {
+fn find_assignment_delim(line : String) -> Int32 {
   let mut index = 0
   while index < line.length() {
     match line.get_char(index) {
@@ -508,7 +512,7 @@ fn find_assignment_delim(line : String) -> Int {
 ///|
 fn scan_generic_assignment(
   path : String,
-  line_no : Int,
+  line_no : Int32,
   line : String,
   options : ScanOptions,
   findings : Array[Finding],
@@ -535,10 +539,10 @@ fn scan_generic_assignment(
 ///|
 fn scan_prefixed_token(
   path : String,
-  line_no : Int,
+  line_no : Int32,
   line : String,
   prefix : String,
-  min_length : Int,
+  min_length : Int32,
   severity : String,
   rule : String,
   options : ScanOptions,
@@ -568,7 +572,7 @@ fn scan_prefixed_token(
 ///|
 fn scan_token_words(
   path : String,
-  line_no : Int,
+  line_no : Int32,
   line : String,
   options : ScanOptions,
   findings : Array[Finding],
@@ -606,7 +610,7 @@ fn scan_token_words(
 ///|
 fn scan_line(
   path : String,
-  line_no : Int,
+  line_no : Int32,
   line : String,
   options : ScanOptions,
   findings : Array[Finding],
@@ -725,7 +729,7 @@ fn walk(
 }
 
 ///|
-fn severity_rank(level : String) -> Int {
+fn severity_rank(level : String) -> Int32 {
   match level {
     "critical" => 4
     "high" => 3
@@ -753,7 +757,7 @@ fn should_fail(fail_on : String, findings : Array[Finding]) -> Bool {
 }
 
 ///|
-fn int_json(value : Int) -> Json {
+fn int_json(value : Int32) -> Json {
   Json::number(value.to_double(), repr=value.to_string())
 }
 

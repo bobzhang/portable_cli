@@ -1,5 +1,5 @@
 ///|
-fn parse_pdf_string_at(data : BytesView, start : Int) -> (String, Int)? {
+fn parse_pdf_string_at(data : BytesView, start : Int32) -> (String, Int32)? {
   if start >= data.length() {
     None
   } else if data[start] == b'(' {
@@ -14,8 +14,8 @@ fn parse_pdf_string_at(data : BytesView, start : Int) -> (String, Int)? {
 ///|
 fn append_links_from_object(
   view : BytesView,
-  object_number : Int,
-  limit : Int,
+  object_number : Int32,
+  limit : Int32,
   links : Array[PdfLinkSummary],
 ) -> Unit {
   let uri_token = "/URI"
@@ -40,7 +40,7 @@ fn append_links_from_object(
 }
 
 ///|
-fn link_summaries(input : PdfInput, limit : Int) -> Array[PdfLinkSummary] {
+fn link_summaries(input : PdfInput, limit : Int32) -> Array[PdfLinkSummary] {
   let cap = if limit < 0 { 0 } else { limit }
   let scan = scan_pdf(input)
   let links : Array[PdfLinkSummary] = []
@@ -68,7 +68,7 @@ fn link_json(link : PdfLinkSummary) -> Json {
 ///|
 fn links_json(
   input : String,
-  limit : Int,
+  limit : Int32,
   links : Array[PdfLinkSummary],
 ) -> String {
   Json::object({
@@ -83,7 +83,7 @@ fn links_json(
 ///|
 fn links_markdown(
   input : String,
-  limit : Int,
+  limit : Int32,
   links : Array[PdfLinkSummary],
 ) -> String {
   let out = StringBuilder()
@@ -102,7 +102,7 @@ fn links_markdown(
 }
 
 ///|
-fn run_links(input : String, limit : Int, as_json : Bool) -> Unit {
+fn run_links(input : String, limit : Int32, as_json : Bool) -> Unit {
   let links = link_summaries(read_pdf_input(input), limit)
   let out = if as_json {
     links_json(input, limit, links)

@@ -1,5 +1,5 @@
 ///|
-fn[T] die(message : String, code : Int) -> T {
+fn[T] die(message : String, code : Int32) -> T {
   @miniio.stderr.write_text(message + "\n") catch {
     _ => ()
   }
@@ -89,7 +89,11 @@ fn value(
 }
 
 ///|
-fn int_value(matches : @argparse.Matches, name : String, fallback : Int) -> Int {
+fn int_value(
+  matches : @argparse.Matches,
+  name : String,
+  fallback : Int32,
+) -> Int32 {
   @string.parse_int(value(matches, name, fallback.to_string())) catch {
     _ => fallback
   }
@@ -123,7 +127,7 @@ fn input_message(matches : @argparse.Matches) -> String {
 }
 
 ///|
-fn wrap_line(line : StringView, width : Int, lines : Array[String]) -> Unit {
+fn wrap_line(line : StringView, width : Int32, lines : Array[String]) -> Unit {
   let words = line.split(" ").filter(word => !word.is_empty()).to_array()
   if words.is_empty() {
     lines.push("")
@@ -145,7 +149,7 @@ fn wrap_line(line : StringView, width : Int, lines : Array[String]) -> Unit {
 }
 
 ///|
-fn wrap_text(text : String, width : Int) -> Array[String] {
+fn wrap_text(text : String, width : Int32) -> Array[String] {
   let lines : Array[String] = []
   for line in text.split("\n") {
     wrap_line(line, width, lines)
@@ -158,7 +162,7 @@ fn bubble_line(
   left : String,
   text : String,
   right : String,
-  width : Int,
+  width : Int32,
 ) -> String {
   left + " " + text.pad_end(width, ' ') + " " + right + "\n"
 }
