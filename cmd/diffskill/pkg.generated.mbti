@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/portable_cli/cmd/diffskill"
+
+// Values
+
+// Errors
+
+// Types and methods
+type DiffFile
+
+type DiffOptions
+
+// Type aliases
+
+// Traits

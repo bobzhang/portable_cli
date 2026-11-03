@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/portable_cli/cmd/repopack"
+
+// Values
+
+// Errors
+
+// Types and methods
+type ExtStat
+
+type FileEntry
+
+type PackOptions
+
+type PackedFile
+
+// Type aliases
+
+// Traits

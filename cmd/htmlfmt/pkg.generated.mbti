@@ -1,0 +1,21 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/portable_cli/cmd/htmlfmt"
+
+// Values
+
+// Errors
+
+// Types and methods
+type Heading
+
+type HtmlIssue
+
+type HtmlReport
+
+type LinkItem
+
+type MetaItem
+
+// Type aliases
+
+// Traits

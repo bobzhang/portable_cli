@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/portable_cli/cmd/mdskill"
+
+// Values
+
+// Errors
+
+// Types and methods
+type CodeFence
+
+type FrontMatterItem
+
+type Heading
+
+type LinkItem
+
+type MarkdownIssue
+
+type MarkdownReport
+
+type TaskItem
+
+// Type aliases
+
+// Traits

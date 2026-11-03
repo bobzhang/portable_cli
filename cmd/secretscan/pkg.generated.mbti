@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/portable_cli/cmd/secretscan"
+
+// Values
+
+// Errors
+
+// Types and methods
+type FileEntry
+
+type Finding
+
+type ScanOptions
+
+type ScanStats
+
+// Type aliases
+
+// Traits
