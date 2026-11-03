@@ -1,0 +1,17 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/portable_cli/cmd/datascout"
+
+// Values
+
+// Errors
+
+// Types and methods
+type ColumnStats
+
+type DataOptions
+
+type DatasetSummary
+
+// Type aliases
+
+// Traits

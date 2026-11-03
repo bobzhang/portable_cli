@@ -1,0 +1,47 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/portable_cli/cmd/pdfskill"
+
+// Values
+
+// Errors
+
+// Types and methods
+type PdfActionSummary
+
+type PdfActionsSummary
+
+type PdfAttachmentSummary
+
+type PdfFormFieldSummary
+
+type PdfFormsSummary
+
+type PdfImageSummary
+
+type PdfImagesSummary
+
+type PdfInput
+
+type PdfLinkSummary
+
+type PdfMetadataSummary
+
+type PdfObjectHit
+
+type PdfObjectSummary
+
+type PdfPageSummary
+
+type PdfPagesSummary
+
+type PdfScan
+
+type PdfSkillCommand
+
+type PdfStreamSummary
+
+type PdfTextSummary
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/portable_cli/cmd/tomlskill"
+
+// Values
+
+// Errors
+
+// Types and methods
+type TomlIssue
+
+type TomlKey
+
+type TomlReport
+
+type TomlTable
+
+// Type aliases
+
+// Traits
